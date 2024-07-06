@@ -1,0 +1,5 @@
+FROM eclipse-temurin:21-jdk
+
+COPY ./j-a-r .
+
+ENTRYPOINT ["java", "-Dnetworkaddress.cache.ttl=60s", "-jar", "j-a-r"]

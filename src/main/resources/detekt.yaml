@@ -1,0 +1,63 @@
+style:
+  WildcardImport:
+    active: false
+
+  MaxLineLength:
+    maxLineLength: 160
+
+  ReturnCount:
+    max: 3
+
+  NewLineAtEndOfFile:
+    active: false
+
+  ForbiddenComment:
+    active: false
+
+  AlsoCouldBeApply:
+    active: true
+
+  CascadingCallWrapping:
+    active: true
+
+  MayBeConst:
+    active: false
+
+naming:
+  TopLevelPropertyNaming:
+    active: false
+
+  ConstructorParameterNaming:
+    active: false
+
+  PackageNaming:
+    active: false
+
+  MemberNameEqualsClassName:
+    active: false
+
+complexity:
+  TooManyFunctions:
+    thresholdInFiles: 50
+    thresholdInClasses: 50
+
+  LongParameterList:
+    active: false
+
+  CognitiveComplexMethod:
+    active: true
+
+  ComplexCondition:
+    active: true
+
+performance:
+  active: false
+
+exceptions:
+  active: false
+
+  TooGenericExceptionThrown:
+    active: false
+
+  TooGenericExceptionCaught:
+    active: false
