@@ -9,30 +9,14 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
-val http4kVer = "5.21.0.0"
-
-// TODO: Migrate to JDK 21
-
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:1.9.23")
 
-    implementation("com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin:0.42.0")
-
-    implementation("com.alibaba.fastjson2:fastjson2:2.0.51.android8")
-
-    implementation("org.http4k:http4k-core:$http4kVer")
-    implementation("wb:http4k:24.6.6.1742")
+    implementation("k:lib:24.7.4.1858")
+    implementation("k:lib-docker:24.7.9.1706")
 
     implementation("org.testng:testng:7.10.2")
-}
-
-sourceSets {
-    main {
-        java.setSrcDirs(listOf("../../Common/k/lib/src/main",
-                               "../../Common/k/lib-marshaller/src/main",
-                               "../../Common/k/lib-docker/src/main"))
-    }
 }
 
 afterEvaluate {
@@ -44,13 +28,13 @@ val blueColor = "\u001B[34m"
 val resetColor = "\u001B[0m"
 
 fun getProp(name : String) : String {
-    val jamFile = file("gradle-local.properties")
+    val propsFile = file("gradle-local.properties")
     val gradleValue = providers.gradleProperty(name).getOrNull()
     val envName = "${project.name}_$name"
 
-    val value = System.getenv(envName) ?: if (jamFile.exists())
+    val value = System.getenv(envName) ?: if (propsFile.exists())
         Properties().let {
-            it.load(jamFile.inputStream())
+            it.load(propsFile.inputStream())
             it.getProperty(name, gradleValue)
         }
     else
@@ -62,7 +46,7 @@ fun getProp(name : String) : String {
     return value
 }
 
-group = "ru.wildberries"
+group = "ru.oldscoolgeek"
 val javaVersion = "21"
 
 tasks.withType<KotlinCompile> {
@@ -77,7 +61,7 @@ java {
 
 gradlePlugin {
     plugins {
-        create("wildberries") {
+        create("$group") {
             displayName = project.name
             id = "$group.${project.name.lowercase()}"
             implementationClass = project.name
@@ -93,7 +77,7 @@ tasks.jar {
     }
 }
 
-tasks.register("j-deploy") {
+tasks.register("g-deploy") {
     group = "[${project.name.lowercase()}]"
     version = SimpleDateFormat("yy.M.d.HHmm").format(Date())
 

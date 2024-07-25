@@ -1,4 +1,3 @@
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import k.common.*
 import k.docker.models.Image
@@ -15,11 +14,10 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-const val defaultGroup = "ru.wildberries"
-const val GLOBAL_PREFIX = "j"
-const val taskGroupMain = "[jam-main]"
-const val taskGroupMore = "[jam-utils]"
-const val jamInstancesLabel = "$taskGroupMain.jam"
+const val defaultGroup = "ru.oldscoolgeek"
+const val GLOBAL_PREFIX = "g"
+const val taskGroupMain = "[$GLOBAL_PREFIX-main]"
+const val taskGroupMore = "[$GLOBAL_PREFIX-utils]"
 const val GRADLE_HOME_VAR = "GRADLE_USER_HOME"
 const val gradlePropsFile = "gradle.properties"
 const val localPropsFile = "gradle-local.properties"
@@ -44,8 +42,6 @@ val toReleaseName = "$GLOBAL_PREFIX-release"
 val releaseMajorName = "$GLOBAL_PREFIX-release-major"
 val releaseMinorName = "$GLOBAL_PREFIX-release-minor"
 val releasePatchName = "$GLOBAL_PREFIX-release-patch"
-
-val updateDependsName = "$GLOBAL_PREFIX-update-depends"
 
 lateinit var jarName : String
 lateinit var fullJarName : String
@@ -196,14 +192,6 @@ class Jam : Plugin<Project> {
             createTask<PrepareEnv>(envUpName)
             createTask<ShutdownEnv>(envDownName)
 
-            project.tasks.create<DependencyUpdatesTask>(updateDependsName) {
-                group = taskGroupMore
-
-                rejectVersionIf {
-                    isNonStable(candidate.version) && !isNonStable(currentVersion)
-                }
-            }
-
             project.tasks.create("$GLOBAL_PREFIX-get-app-version") {
                 group = taskGroupMore
 
@@ -263,14 +251,6 @@ class Jam : Plugin<Project> {
         Git.installHooks()
         configureProject()
         createTasks()
-    }
-
-    fun isNonStable(version : String) : Boolean {
-        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
-        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
-        val isStable = stableKeyword || regex.matches(version)
-
-        return isStable.not()
     }
 }
 

@@ -1,6 +1,5 @@
 package tasks
 
-import jamInstancesLabel
 import buildDir
 import imagesName
 import k.common.*
@@ -42,7 +41,7 @@ fun prepareEnv()
 {
     if (File(projectDir, "env").exists())
     {
-        buildImages("env", "$projectName-test", jamInstancesLabel)
+        buildImages("env", "$projectName-test")
 
         Compose("env").start()
     }
