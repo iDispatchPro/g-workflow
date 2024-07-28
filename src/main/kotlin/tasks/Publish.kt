@@ -8,18 +8,15 @@ import org.gradle.api.tasks.TaskAction
 import params
 import projectName
 
-open class Publish : DefaultTask()
-{
-    init
-    {
+open class Publish : DefaultTask() {
+    init {
         description = "Publishing built images to a local Docker registry."
 
         dependsOn(imagesName)
     }
 
     @TaskAction
-    fun action()
-    {
+    fun action() {
         replaceError("Failed to publish images") {
             replaceError("Failed to login [${params.registry}]") {
                 Docker.login(params.registry)

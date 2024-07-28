@@ -2,10 +2,8 @@ import k.common.*
 import k.stream.text
 import java.io.File
 
-object Git
-{
-    fun commit(name : String, version : String)
-    {
+object Git {
+    fun commit(name : String, version : String) {
         cmdLine("git add --all")
         cmdLine("git commit -m 'chore($name): $version'")
 
@@ -15,16 +13,14 @@ object Git
     fun getTag() =
         cmdLine("git describe --tags --abbrev=0")
 
-    fun tag(version : String)
-    {
+    fun tag(version : String) {
         val commitHash = cmdLine("git rev-parse --short HEAD")
 
         cmdLine("git tag -a v$version $commitHash -m v$version")
     }
 
     fun getBranch() =
-        try
-        {
+        try {
             val branch = cmdLine("git rev-parse --abbrev-ref HEAD")
 
             if (branch same "HEAD")
@@ -32,13 +28,11 @@ object Git
             else
                 branch
         }
-        catch (_ : Throwable)
-        {
+        catch (_ : Throwable) {
             ""
         }
 
-    fun installHooks()
-    {
+    fun installHooks() {
         val hooksDir = File(projectDir, ".git/hooks")
 
         if (hooksDir.exists())

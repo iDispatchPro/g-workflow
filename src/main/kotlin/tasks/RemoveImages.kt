@@ -1,17 +1,16 @@
 package tasks
 
-import jamInstancesLabel
 import envDownName
+import instancesLabel
 import k.common.*
 import k.docker.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
+import pluginName
 
-open class RemoveImages : DefaultTask()
-{
-    init
-    {
-        description = "Deleting built with Jam and unnamed local images."
+open class RemoveImages : DefaultTask() {
+    init {
+        description = "Deleting built with $pluginName and unnamed local images."
 
         mustRunAfter(envDownName)
     }
@@ -20,9 +19,9 @@ open class RemoveImages : DefaultTask()
     fun action() =
         stage("Remove images", logError = true) {
             Snapshot().images
-                .filter { jamInstancesLabel in it.labels || it.image.version == "<none>" }
+                .filter { instancesLabel in it.labels || it.image.version == "<none>" }
                 .forEach {
-                    muteExceptions {
+                    mute {
                         Docker.removeImage(it.id)
                     }
                 }

@@ -1,7 +1,11 @@
+import Extension.Companion.toExtension
+import Git
+import Parameters
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import k.common.*
 import k.docker.models.Image
-import k.marshalling.unMarshall
+import k.serializing.deSerialize
+import mainFiles
 import org.gradle.api.*
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
@@ -14,7 +18,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-const val defaultGroup = "ru.oldscoolgeek"
+const val pluginName = "G-Workflow"
+val instancesLabel = pluginName.low
 const val GLOBAL_PREFIX = "g"
 const val taskGroupMain = "[$GLOBAL_PREFIX-main]"
 const val taskGroupMore = "[$GLOBAL_PREFIX-utils]"
@@ -53,7 +58,7 @@ lateinit var versionFile : File
 lateinit var dateStr : String
 
 var isMainBranch : Boolean = false
-val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile") + env(gradlePropsFile) + env(localPropsFile)).unMarshall<Parameters>()
+val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile") + env(gradlePropsFile) + env(localPropsFile)).deSerialize<Parameters>()
 
 val defaultDockerFile
     get() = File(buildDir, dockerFile)
@@ -61,13 +66,15 @@ val defaultDockerFile
 fun isLib() =
     mainFiles.isEmpty()
 
-class Jam : Plugin<Project> {
+class GWorkFlow : Plugin<Project> {
     private lateinit var project : Project
 
     private inline fun <reified T : Task> createTask(name : String, groupName : String = taskGroupMain) =
         project.tasks.create(name, T::class.java) { group = groupName }
 
     override fun apply(project : Project) {
+        val extension = project.toExtension(project.objects)
+
         val branch = Git.getBranch()
 
         isMainBranch = branch in listOf("main", "master", "prod", "")
@@ -91,7 +98,6 @@ class Jam : Plugin<Project> {
 
         fun configureProject() {
             project.version = productVer
-            project.group = params.group
 
             project
                 .repositories {
@@ -175,10 +181,10 @@ class Jam : Plugin<Project> {
             }
 
             project.extensions.getByType<JavaToolchainService>().launcherFor {
-                languageVersion.set(JavaLanguageVersion.of(params.jdkVer))
+                languageVersion.set(JavaLanguageVersion.of(extension.jdk.get()))
             }
 
-            java.toolchain.languageVersion.set(JavaLanguageVersion.of(params.jdkVer))
+            java.toolchain.languageVersion.set(JavaLanguageVersion.of(extension.jdk.get()))
 
             project.gradle.startParameter.maxWorkerCount = 8
             project.gradle.startParameter.isParallelProjectExecutionEnabled = true

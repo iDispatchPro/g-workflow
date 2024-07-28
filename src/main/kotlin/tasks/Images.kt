@@ -23,8 +23,7 @@ import java.io.File
 const val dockerFile = "dockerfile"
 const val imagesDir = "images"
 
-fun imageTags(name : String, defaultName : String) : List<String>
-{
+fun imageTags(name : String, defaultName : String) : List<String> {
     val fixedName = (name - "." - dockerFile) default defaultName
 
     return params.registryUrl
@@ -32,8 +31,7 @@ fun imageTags(name : String, defaultName : String) : List<String>
         .map { Image(it, fixedName, productVer).fullName }
 }
 
-fun buildImage(name : String, defaultName : String, source : String, label : String? = null)
-{
+fun buildImage(name : String, defaultName : String, source : String, label : String? = null) {
     val dockerFile = File(buildDir, name)
 
     prepareFile(File(source), dockerFile)
@@ -45,8 +43,7 @@ fun buildImage(name : String, defaultName : String, source : String, label : Str
     }
 }
 
-fun prepareFile(from : File, to : File)
-{
+fun prepareFile(from : File, to : File) {
     to.parentFile.mkdirs()
     to.writeText(from.readText().patched)
 }
@@ -76,10 +73,8 @@ fun buildImages(dir : String, defaultName : String, label : String? = null) =
         }
     }
 
-open class Images : DefaultTask()
-{
-    init
-    {
+open class Images : DefaultTask() {
+    init {
         description = "Building images for Docker files from the 'images' directory or for automatically generated ones."
 
         inputs.files(fullJarName)

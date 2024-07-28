@@ -6,14 +6,14 @@ plugins {
     `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.1.0"
     id("maven-publish")
-    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0"
 }
 
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:1.9.23")
 
-    implementation("k:lib:24.7.4.1858")
+    implementation("k:lib:24.7.25.1644")
     implementation("k:lib-docker:24.7.9.1706")
 
     implementation("org.testng:testng:7.10.2")
@@ -32,13 +32,14 @@ fun getProp(name : String) : String {
     val gradleValue = providers.gradleProperty(name).getOrNull()
     val envName = "${project.name}_$name"
 
-    val value = System.getenv(envName) ?: if (propsFile.exists())
-        Properties().let {
-            it.load(propsFile.inputStream())
-            it.getProperty(name, gradleValue)
-        }
-    else
-        gradleValue
+    val value = System.getenv(envName)
+        ?: if (propsFile.exists())
+            Properties().let {
+                it.load(propsFile.inputStream())
+                it.getProperty(name, gradleValue)
+            }
+        else
+            gradleValue
 
     if (value == null)
         throw Exception("Environment var [$envName] or property [$name] not found in gradle-local.properties or gradle.properties")
@@ -46,7 +47,7 @@ fun getProp(name : String) : String {
     return value
 }
 
-group = "ru.oldscoolgeek"
+group = "ru.old-school-geek"
 val javaVersion = "21"
 
 tasks.withType<KotlinCompile> {
@@ -64,9 +65,9 @@ gradlePlugin {
         create("$group") {
             displayName = project.name
             id = "$group.${project.name.lowercase()}"
-            implementationClass = project.name
+            implementationClass = "GWorkFlow"
             description = "Creates a standard build workflow for services."
-            tags.set(listOf("build", "services"))
+            tags.set(listOf("build", "services", "publish"))
         }
     }
 }
@@ -103,13 +104,14 @@ repositories {
 
 publishing {
     repositories {
-        maven {
+        mavenLocal()
+        /*maven {
             url = uri(getProp("mavenPluginsURL"))
 
             credentials {
                 username = getProp("mavenLogin")
                 password = getProp("mavenPassword")
             }
-        }
+        }*/
     }
 }

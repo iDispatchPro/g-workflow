@@ -1,15 +1,13 @@
 package tasks
 
 import buildName
-import fullJarName
 import k.common.cmdLine
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
+import fullJarName
 
-open class Run : DefaultTask()
-{
-    init
-    {
+open class Run : DefaultTask() {
+    init {
         description = "Run of jar-file"
 
         dependsOn(buildName)

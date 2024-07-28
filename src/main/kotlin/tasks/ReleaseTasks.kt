@@ -1,7 +1,6 @@
 package tasks
 
 import Git
-import checkMainBranch
 import k.common.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.*
@@ -11,22 +10,18 @@ const val versionPartsCount = 3
 
 class Version(var major : Int,
               var minor : Int,
-              var build : Int)
-{
+              var build : Int) {
     override fun toString() =
         "$major.$minor.$build"
 }
 
-abstract class ReleaseTask : DefaultTask()
-{
-    init
-    {
+abstract class ReleaseTask : DefaultTask() {
+    init {
         description = "Bump to next ${className.low - "release" - "_decorated"} version"
     }
 
     @Internal
-    protected fun getVersion() : Version
-    {
+    protected fun getVersion() : Version {
         val parts = (versionFile.text default "0.0.0")
             .trim()
             .split('.')
@@ -37,8 +32,7 @@ abstract class ReleaseTask : DefaultTask()
     }
 
     @TaskAction
-    fun action()
-    {
+    fun action() {
         versionFile.writeText(getNewVersion().toString())
 
         val actualVersion = getVersion().toString()
@@ -52,8 +46,7 @@ abstract class ReleaseTask : DefaultTask()
     protected abstract fun getNewVersion() : Version
 }
 
-open class ReleaseMajor : ReleaseTask()
-{
+open class ReleaseMajor : ReleaseTask() {
     @Internal
     override fun getNewVersion() =
         getVersion().also {
@@ -63,8 +56,7 @@ open class ReleaseMajor : ReleaseTask()
         }
 }
 
-open class ReleaseMinor : ReleaseTask()
-{
+open class ReleaseMinor : ReleaseTask() {
     @Internal
     override fun getNewVersion() =
         getVersion().also {
@@ -73,8 +65,7 @@ open class ReleaseMinor : ReleaseTask()
         }
 }
 
-open class ReleasePatch : ReleaseTask()
-{
+open class ReleasePatch : ReleaseTask() {
     @Internal
     override fun getNewVersion() =
         getVersion().also {
