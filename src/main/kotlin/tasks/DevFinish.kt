@@ -24,7 +24,9 @@ open class DevFinish : DefaultTask() {
             }
         }
 
-        dependsOn(cleanName, testName, imagesName)
+        dependsOn(cleanName,
+                  testName,
+                  imagesName)
 
         project.tasks.getByName("compileKotlin").mustRunAfter(cleanName)
         project.tasks.getByName("compileJava").mustRunAfter(cleanName)

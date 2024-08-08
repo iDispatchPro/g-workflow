@@ -1,11 +1,8 @@
 import Extension.Companion.toExtension
-import Git
-import Parameters
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import k.common.*
 import k.docker.models.Image
 import k.serializing.deSerialize
-import mainFiles
 import org.gradle.api.*
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
@@ -58,6 +55,7 @@ lateinit var versionFile : File
 lateinit var dateStr : String
 
 var isMainBranch : Boolean = false
+
 val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile") + env(gradlePropsFile) + env(localPropsFile)).deSerialize<Parameters>()
 
 val defaultDockerFile
@@ -144,29 +142,6 @@ class GWorkFlow : Plugin<Project> {
                     }
 
                 javaSources["test"].java.srcDirs(listOf("src/test/kotlin"))
-
-                project.extensions.configure<PublishingExtension>("publishing") {
-                    publications {
-                        create<MavenPublication>(projectName) {
-                            from(project.components["java"])
-
-                            groupId = project.group.str
-                            artifactId = projectName
-                            version = productVer
-                        }
-                    }
-
-                    repositories {
-                        maven {
-                            url = params.mavenPluginsURL
-
-                            credentials {
-                                username = params.mavenLogin
-                                password = params.mavenPassword
-                            }
-                        }
-                    }
-                }
             }
             else
                 project.plugins.apply("application")
@@ -215,7 +190,7 @@ class GWorkFlow : Plugin<Project> {
             }
 
             if (isLib()) {
-                createTask<DeployLib>(deployName)
+                createTask<PublishLib>(deployName)
                 createTask<LibDevFinish>(devFinishName)
                 createTask<LibTests>(testName)
             }
