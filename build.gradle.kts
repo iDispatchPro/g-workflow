@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -11,21 +10,13 @@ plugins {
 
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
-    implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:1.9.23")
+    implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("k:lib:24.7.25.1644")
+    implementation("ru.wildberries:k-lib-common:24.8.8.1156")
     implementation("k:lib-docker:24.7.9.1706")
 
     implementation("org.testng:testng:7.10.2")
 }
-
-afterEvaluate {
-    (tasks["sourcesJar"] as Jar).duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-val orangeColor = "\u001B[33m"
-val blueColor = "\u001B[34m"
-val resetColor = "\u001B[0m"
 
 fun getProp(name : String) : String {
     val propsFile = file("gradle-local.properties")
@@ -47,8 +38,17 @@ fun getProp(name : String) : String {
     return value
 }
 
+afterEvaluate {
+    (tasks["sourcesJar"] as Jar).duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+val orangeColor = "\u001B[33m"
+val blueColor = "\u001B[34m"
+val resetColor = "\u001B[0m"
+
 group = "ru.old-school-geek"
-val javaVersion = "21"
+
+/*val javaVersion = "21"
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = javaVersion
@@ -58,7 +58,7 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(javaVersion))
     }
-}
+}*/
 
 gradlePlugin {
     plugins {
@@ -100,11 +100,12 @@ repositories {
             password = getProp("mavenPassword")
         }
     }
+
+    mavenCentral()
 }
 
 publishing {
     repositories {
-        mavenLocal()
         /*maven {
             url = uri(getProp("mavenPluginsURL"))
 
@@ -113,5 +114,7 @@ publishing {
                 password = getProp("mavenPassword")
             }
         }*/
+
+        mavenLocal()
     }
 }
