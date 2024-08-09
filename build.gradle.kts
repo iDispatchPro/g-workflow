@@ -3,7 +3,7 @@ import java.util.*
 
 plugins {
     `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "1.1.0"
+    id("com.gradle.plugin-publish") version "1.2.1"
     id("maven-publish")
     id("org.jetbrains.kotlin.jvm") version "2.0.0"
 }
@@ -16,6 +16,9 @@ dependencies {
     implementation("k:lib-docker:24.7.9.1706")
 
     implementation("org.testng:testng:7.10.2")
+
+    implementation("com.squareup.okio:okio:3.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 fun getProp(name : String) : String {
@@ -59,6 +62,11 @@ java {
         languageVersion.set(JavaLanguageVersion.of(javaVersion))
     }
 }*/
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
 gradlePlugin {
     plugins {

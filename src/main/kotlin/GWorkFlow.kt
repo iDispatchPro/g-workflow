@@ -4,12 +4,15 @@ import k.common.*
 import k.docker.models.Image
 import k.serializing.deSerialize
 import org.gradle.api.*
-import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.plugins.*
+import org.gradle.api.plugins.catalog.VersionCatalogPlugin
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.*
 import org.gradle.kotlin.dsl.*
+import org.gradle.plugins.signing.SigningPlugin
 import tasks.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -130,8 +133,12 @@ class GWorkFlow : Plugin<Project> {
 
             if (isLib()) {
                 java.withSourcesJar()
+                java.withJavadocJar()
 
-                project.plugins.apply("maven-publish")
+                project.pluginManager.apply(MavenPublishPlugin::class.java)
+                project.pluginManager.apply(SigningPlugin::class.java)
+                project.pluginManager.apply(JavaLibraryPlugin::class.java)
+                //project.pluginManager.apply(VersionCatalogPlugin::class.java)
 
                 val javaSources = project.extensions.getByType(SourceSetContainer::class.java)
 

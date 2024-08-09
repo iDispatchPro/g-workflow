@@ -1,7 +1,11 @@
 package tasks
 
+import computeAndSaveFileHash
 import devFinishName
 import k.common.*
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.gradle.api.DefaultTask
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
@@ -12,11 +16,14 @@ import org.gradle.plugins.signing.SigningExtension
 import params
 import productVer
 import projectName
-import java.io.File
+import java.io.*
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets.UTF_8
+import java.util.zip.*
 
 open class PublishLib : DefaultTask() {
     private lateinit var mavenPublish : MavenPublicationInternal
-    private val zipPath = project.layout.buildDirectory.get().asFile.resolve("upload.zip").absolutePath
+    private val zipFile = project.layout.buildDirectory.get().asFile.resolve("upload.zip")
 
     init {
         description = "Publish a library to maven repository."
@@ -27,11 +34,15 @@ open class PublishLib : DefaultTask() {
 
         dependsOn(publishStdName, devFinishName)*/
 
-        dependsOn(devFinishName)
+        dependsOn(devFinishName,
+                  "javadocJar",
+                  "sourcesJar",
+                  "generatePomFileForMavenPublication",
+                  "generateMetadataFileForMavenPublication")
 
         project.extensions.configure<PublishingExtension>("publishing") {
             publications {
-                mavenPublish = create<MavenPublication>(projectName) {
+                mavenPublish = create<MavenPublication>("Maven") {
                     from(project.components["java"])
 
                     groupId = project.group.str
@@ -59,13 +70,13 @@ open class PublishLib : DefaultTask() {
         pack()
         upload()
 
-        msg("Current $projectName version: $productVer".n.n, MsgType.BlueText)
+        msg("\nCurrent $projectName version: $productVer".n.n, MsgType.BlueText)
         msg("Please use this line for importing library:".n, MsgType.BlueText)
         msg("""implementation("${project.group}:$projectName:$productVer")""".n, MsgType.OrangeText)
     }
 
     private fun sign() {
-        msg("Signing artifacts...")
+        println("\nSigning artifacts...")
 
         val signer = project.extensions.getByType(SigningExtension::class.java)
 
@@ -76,7 +87,7 @@ open class PublishLib : DefaultTask() {
     }
 
     private fun pack() {
-        msg("Packing files...")
+        println("\nPacking files...")
 
         val buildDirectory = project.layout.buildDirectory
 
@@ -85,52 +96,104 @@ open class PublishLib : DefaultTask() {
             .get()
             .asFileTree
             .files
-            // TODO: Не собирать изначально
-            .filter { file ->
-                !file.name.endsWith("-plain.jar") && !file.name.endsWith("-plain.jar.asc")
+
+        val commonFileName = "$projectName-$productVer"
+
+        val publishDir = buildDirectory.dir("publications/maven").get()
+
+        val mavenFiles = publishDir
+            .asFileTree
+            .map { file : File ->
+                val newFile = File(publishDir.asFile, when (file.name) {
+                    "pom-default.xml"     -> "$commonFileName.pom"
+                    "pom-default.xml.asc" -> "$commonFileName.pom.asc"
+                    "module.json"         -> "$commonFileName.module"
+                    "module.json.asc"     -> "$commonFileName.module.asc"
+                    else                  -> "$commonFileName.${file.name}"
+                })
+
+                file.renameTo(newFile)
+
+                newFile
             }
 
-        val mavenFiles = buildDirectory
-            .dir("publications/maven")
-            .orNull
-            ?.asFileTree
-            ?.map { file : File ->
-                File(when (file.name) {
-                         "pom-default.xml"     -> "$projectName-$productVer.pom"
-                         "pom-default.xml.asc" -> "$projectName-$productVer.pom.asc"
-                         "module.json"         -> "$projectName-$productVer.module"
-                         "module.json.asc"     -> "$projectName-$productVer.module.asc"
-                         else                  -> "$projectName-$productVer.${file.name}"
-                     })
-            }
+        val files = buildFiles + mavenFiles
 
-        val versionCatalogDir = buildDirectory.dir("version-catalog").orNull
-        versionCatalogDir?.asFileTree?.forEach { file ->
-
-            val fileName = file.name
-            val newName =
-                when {
-                    fileName.endsWith("versions.toml")     -> "$projectName-$productVer.toml"
-                    fileName.endsWith("versions.toml.asc") -> "$projectName-$productVer.toml.asc"
-                    else                                   -> fileName
-                }
-
-            filesToAggregate.addLast(renameFile(file, newName))
+        val allFiles = files + files.flatMap { file ->
+            computeAndSaveFileHash(file, listOf(/*"SHA-256", "SHA-512", */"MD5", "SHA-1"))
         }
 
-        val tempDirFile = createDirectoryStructure(directoryPath)
+        ZipOutputStream(FileOutputStream(zipFile))
+            .use { zipOut ->
+                val data = ByteArray(1024)
 
-        filesToAggregate.forEach { file ->
-            tempDirFile.let {
-                file.copyTo(it.resolve(file.name), overwrite = true)
+                allFiles
+                    .forEach { file ->
+                        FileInputStream(file)
+                            .use { fi ->
+                                zipOut.putNextEntry(ZipEntry(file.name))
+
+                                var length = fi.read(data)
+
+                                while (length != -1) {
+                                    zipOut.write(data, 0, length)
+                                    length = fi.read(data)
+                                }
+                            }
+                    }
             }
-        }
-
-        ZipUtils.prepareZipFile(it, zipPath)
     }
 
     private fun upload() {
-        msg("Upload to repo...")
+        val name = URLEncoder.encode("${project.group}:$projectName:$productVer", UTF_8)
 
+        val url = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=$name"
+
+        println("\nUpload to ${url}...")
+
+        val encodedCredentials = "${params.mavenLogin}:${params.mavenPassword}".base64
+
+        val body = MultipartBody
+            .Builder()
+            .addFormDataPart("bundle",
+                             "upload.zip",
+                             zipFile.asRequestBody("application/zip".toMediaType()))
+            .build()
+
+        val request = Request
+            .Builder()
+            .post(body)
+            .addHeader("Authorization", "UserToken $encodedCredentials")
+            .url(url)
+            .build()
+
+        val response = OkHttpClient.Builder().build().newCall(request).execute()
+
+        handleResponse(response,
+                       successMessage = "Published to Maven central. Deployment ID:",
+                       failureMessage = "Cannot publish.")
+    }
+
+    data class ErrorMessage(val error : Error)
+
+    data class Error(val message : String)
+
+    private fun handleResponse(response : Response,
+                               successMessage : String,
+                               failureMessage : String) {
+        val responseBody = response.body?.string()
+
+        if (!response.isSuccessful) {
+            val statusCode = response.code
+
+            //val errorMessage = responseBody?.deSerialize<ErrorMessage>()
+            //                ?: ErrorMessage(Error("Unknown Error: $responseBody"))
+
+            //  println("$failureMessage\nHTTP Status Code: $statusCode\nError Message: ${errorMessage.error.message}")
+            println(response.message)
+            println(response.code)
+        }
+        else
+            println("$successMessage\n$responseBody")
     }
 }
