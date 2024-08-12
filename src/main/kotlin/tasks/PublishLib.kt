@@ -2,10 +2,14 @@ package tasks
 
 import computeAndSaveFileHash
 import devFinishName
+import extension
+import extensionName
 import k.common.*
+import k.serializing.deSerialize
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.gradle.api.DefaultTask
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
@@ -21,8 +25,12 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.*
 
+const val keyServer = "https://keyserver.ubuntu.com/pks"
+
 open class PublishLib : DefaultTask() {
     private lateinit var mavenPublish : MavenPublicationInternal
+    private lateinit var groupIdValue : String
+
     private val zipFile = project.layout.buildDirectory.get().asFile.resolve("upload.zip")
 
     init {
@@ -40,39 +48,87 @@ open class PublishLib : DefaultTask() {
                   "generatePomFileForMavenPublication",
                   "generateMetadataFileForMavenPublication")
 
-        project.extensions.configure<PublishingExtension>("publishing") {
-            publications {
-                mavenPublish = create<MavenPublication>("Maven") {
-                    from(project.components["java"])
+        project
+            .afterEvaluate {
+                groupIdValue = extension.groupId.get() mustBeSpecified "$extensionName.group"
 
-                    groupId = project.group.str
-                    artifactId = projectName
-                    version = productVer
-                } as MavenPublicationInternal
-            }
+                extensions.configure<PublishingExtension>("publishing") {
+                    publications {
+                        mavenPublish = create<MavenPublication>("Maven") {
+                            from(project.components["java"])
 
-            repositories {
-                maven {
-                    url = params.mavenPluginsURL
+                            groupId = groupIdValue
+                            artifactId = projectName
+                            version = productVer
 
-                    credentials {
-                        username = params.mavenLogin
-                        password = params.mavenPassword
+                            pom.url = extension.projectUrl.get() mustBeSpecified "$extensionName.projectUrl"
+                            pom.description = extension.projectDescription.get() mustBeSpecified "$extensionName.projectDescription"
+
+                            pom.scm { url = "http://x.y.zz" }
+                            //pom.issueManagement { url = "https://x.y.zzz" }
+                            pom.licenses {
+                                license {
+                                    url = "http://x.y.zzzz"
+                                }
+                            }
+                            pom.developers {
+                                developer {
+                                    url = "http://x.y.zzzzz"
+                                }
+                            }
+
+                        } as MavenPublicationInternal
+                    }
+
+                    repositories {
+                        maven {
+                            url = params.mavenPluginsURL
+
+                            credentials {
+                                username = params.mavenLogin
+                                password = params.mavenPassword
+                            }
+                        }
                     }
                 }
             }
-        }
     }
 
     @TaskAction
     fun action() {
+        ensureKey()
         sign()
         pack()
         upload()
 
-        msg("\nCurrent $projectName version: $productVer".n.n, MsgType.BlueText)
-        msg("Please use this line for importing library:".n, MsgType.BlueText)
-        msg("""implementation("${project.group}:$projectName:$productVer")""".n, MsgType.OrangeText)
+        msg("\nPlease use this line for importing library:".n, MsgType.BlueText)
+        msg("""implementation("$groupIdValue:$projectName:$productVer")""".n, MsgType.OrangeText)
+    }
+
+    private fun ensureKey() {
+        println("\nLook for public key in $keyServer...")
+
+        val check = call(Request.Builder()
+                             .get()
+                             .url("$keyServer/lookup?search=${params.signingKeyId}&fingerprint=on&op=index"))
+
+        if (check.code == 404) {
+            println("\nKey not found. Try to upload...")
+
+            val body = "keytext=${File(params.signingPublicKeyFile).text mustBeFound params.signingPublicKeyFile}"
+                .toRequestBody("application/x-www-form-urlencoded".toMediaType())
+
+            val publish = call(Request.Builder()
+                                   .post(body)
+                                   .url("$keyServer/add"))
+
+            handleResponse(publish, "upload public key")
+        }
+        else {
+            println("\nKey found. Use existing...")
+
+            handleResponse(check, "check public key")
+        }
     }
 
     private fun sign() {
@@ -82,7 +138,7 @@ open class PublishLib : DefaultTask() {
 
         mavenPublish.publishableArtifacts
             .forEach {
-                signer.sign { it.file }
+                signer.sign(it.file)
             }
     }
 
@@ -119,9 +175,12 @@ open class PublishLib : DefaultTask() {
 
         val files = buildFiles + mavenFiles
 
-        val allFiles = files + files.flatMap { file ->
-            computeAndSaveFileHash(file, listOf(/*"SHA-256", "SHA-512", */"MD5", "SHA-1"))
-        }
+        val allFiles = files + files
+            .flatMap { file ->
+                computeAndSaveFileHash(file, listOf("SHA-256", "SHA-512", "MD5", "SHA-1"))
+            }
+
+        val path = groupIdValue.str.replace(".", "\\") + "\\$projectName\\$productVer"
 
         ZipOutputStream(FileOutputStream(zipFile))
             .use { zipOut ->
@@ -130,22 +189,26 @@ open class PublishLib : DefaultTask() {
                 allFiles
                     .forEach { file ->
                         FileInputStream(file)
-                            .use { fi ->
-                                zipOut.putNextEntry(ZipEntry(file.name))
+                            .use { stream ->
+                                zipOut.putNextEntry(ZipEntry("$path\\${file.name}"))
 
-                                var length = fi.read(data)
+                                var length = stream.read(data)
 
                                 while (length != -1) {
                                     zipOut.write(data, 0, length)
-                                    length = fi.read(data)
+                                    length = stream.read(data)
                                 }
+
+                                zipOut.closeEntry()
                             }
                     }
+
+                zipOut.close()
             }
     }
 
     private fun upload() {
-        val name = URLEncoder.encode("${project.group}:$projectName:$productVer", UTF_8)
+        val name = URLEncoder.encode("$groupIdValue:$projectName:$productVer", UTF_8)
 
         val url = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=$name"
 
@@ -160,40 +223,28 @@ open class PublishLib : DefaultTask() {
                              zipFile.asRequestBody("application/zip".toMediaType()))
             .build()
 
-        val request = Request
-            .Builder()
-            .post(body)
-            .addHeader("Authorization", "UserToken $encodedCredentials")
-            .url(url)
-            .build()
+        val response = call(Request.Builder()
+                                .post(body)
+                                .addHeader("Authorization", "UserToken $encodedCredentials")
+                                .url(url))
 
-        val response = OkHttpClient.Builder().build().newCall(request).execute()
 
-        handleResponse(response,
-                       successMessage = "Published to Maven central. Deployment ID:",
-                       failureMessage = "Cannot publish.")
+        handleResponse(response, "upload artifacts") { it.deSerialize<ErrorMessage>().error.message }
     }
+
+    private fun call(request : Request.Builder) =
+        OkHttpClient.Builder().build().newCall(request.build()).execute()
 
     data class ErrorMessage(val error : Error)
 
     data class Error(val message : String)
 
     private fun handleResponse(response : Response,
-                               successMessage : String,
-                               failureMessage : String) {
+                               failureMessage : String,
+                               errorExtractor : (String) -> String = { it }) {
         val responseBody = response.body?.string()
 
-        if (!response.isSuccessful) {
-            val statusCode = response.code
-
-            //val errorMessage = responseBody?.deSerialize<ErrorMessage>()
-            //                ?: ErrorMessage(Error("Unknown Error: $responseBody"))
-
-            //  println("$failureMessage\nHTTP Status Code: $statusCode\nError Message: ${errorMessage.error.message}")
-            println(response.message)
-            println(response.code)
-        }
-        else
-            println("$successMessage\n$responseBody")
+        if (!response.isSuccessful)
+            error("Failed to $failureMessage\nHTTP Status Code: ${response.code}\nError Message: ${errorExtractor(responseBody ?: "")}")
     }
 }

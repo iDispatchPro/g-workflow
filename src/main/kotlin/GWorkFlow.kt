@@ -5,9 +5,6 @@ import k.docker.models.Image
 import k.serializing.deSerialize
 import org.gradle.api.*
 import org.gradle.api.plugins.*
-import org.gradle.api.plugins.catalog.VersionCatalogPlugin
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.*
@@ -26,6 +23,7 @@ const val taskGroupMore = "[$GLOBAL_PREFIX-utils]"
 const val GRADLE_HOME_VAR = "GRADLE_USER_HOME"
 const val gradlePropsFile = "gradle.properties"
 const val localPropsFile = "gradle-local.properties"
+val myPropsFile = "$instancesLabel.properties"
 const val VERSION_FILE = "version.txt"
 
 val deployName = "$GLOBAL_PREFIX-deploy"
@@ -56,10 +54,14 @@ lateinit var buildDir : String
 lateinit var projectDir : String
 lateinit var versionFile : File
 lateinit var dateStr : String
+lateinit var extension : Extension
 
 var isMainBranch : Boolean = false
 
-val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile") + env(gradlePropsFile) + env(localPropsFile)).deSerialize<Parameters>()
+val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
+        + env(gradlePropsFile)
+        + env(localPropsFile)
+        + env(myPropsFile)).deSerialize<Parameters>()
 
 val defaultDockerFile
     get() = File(buildDir, dockerFile)
@@ -74,7 +76,7 @@ class GWorkFlow : Plugin<Project> {
         project.tasks.create(name, T::class.java) { group = groupName }
 
     override fun apply(project : Project) {
-        val extension = project.toExtension(project.objects)
+        extension = project.toExtension(project.objects)
 
         val branch = Git.getBranch()
 

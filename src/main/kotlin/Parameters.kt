@@ -1,6 +1,6 @@
 import k.common.list
 import k.docker.models.DockerRegistry
-import k.serializing.Optional
+import k.serializing.*
 import java.net.URI
 
 data class Parameters(val registryUrl : String,
@@ -11,8 +11,13 @@ data class Parameters(val registryUrl : String,
                       val mavenDependsURL : URI,
                       val mavenPluginsURL : URI,
                       val mavenLogin : String,
-                      val mavenPassword : String)
-{
+                      val mavenPassword : String,
+                      @Optional
+                      @Name("signing.keyId")
+                      val signingKeyId : String,
+                      @Optional
+                      @Name("signing.publicKeyFile")
+                      val signingPublicKeyFile : String) {
     val registry : DockerRegistry
         get() = DockerRegistry(registryUrl.list.first(), registryLogin, registryPassword)
 }
