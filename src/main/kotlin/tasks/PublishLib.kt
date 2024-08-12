@@ -14,7 +14,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.internal.publication.MavenPublicationInternal
-import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
@@ -29,7 +28,7 @@ import java.util.zip.*
 const val keyServer = "https://keyserver.ubuntu.com/pks"
 
 open class PublishLib : DefaultTask() {
-    private val mavenPublish = project.extensions.getByType(MavenPublishPlugin::class.java) as MavenPublicationInternal
+    private lateinit var mavenPublish : MavenPublicationInternal
     private lateinit var groupIdValue : String
 
     private val zipFile = project.layout.buildDirectory.get().asFile.resolve("upload.zip")
@@ -95,6 +94,20 @@ open class PublishLib : DefaultTask() {
                             }
                         }
                     }
+
+                    project.tasks
+                        .filter {
+                            it.name in listOf("publishToMavenLocal",
+                                              "publish",
+                                              "generateMetadataFileForMavenPublication",
+                                              "generatePomFileForMavenPublication",
+                                              "publishAllPublicationsToMavenRepository",
+                                              "publishMavenPublicationToMavenLocal",
+                                              "publishMavenPublicationToMavenRepository")
+                        }
+                        .forEach {
+                            it.group = null
+                        }
                 }
             }
     }
@@ -102,8 +115,10 @@ open class PublishLib : DefaultTask() {
     @TaskAction
     fun action() {
         ensureKey()
-        sign()
-        pack()
+
+        val files = collectFiles()
+
+        pack(files + hash(files) + sign(files))
         upload()
 
         msg("\nPlease use this line for importing library:".n, MsgType.BlueText)
@@ -139,58 +154,54 @@ open class PublishLib : DefaultTask() {
     private infix fun String?.fromProps(name : String) =
         mustBeSpecified("$name in *.properties file")
 
-    private fun sign() {
-        println("\nSigning artifacts...")
+    private fun hash(files : List<File>) : List<File> {
+        println("\nHashing...")
 
-        val signer = project.extensions.getByType(SigningExtension::class.java)
-
-        signer.useInMemoryPgpKeys(params.signingKeyId fromProps "signingKeyId",
-                                  File(params.signingKeyRingFile fromProps "signingKeyRingFile").text,
-                                  params.signingPassFraze fromProps "signingPassFraze")
-
-        mavenPublish.publishableArtifacts
-            .forEach {
-                signer.sign(it.file)
-            }
-    }
-
-    private fun pack() {
-        println("\nPacking files...")
-
-        val buildDirectory = project.layout.buildDirectory
-
-        val buildFiles = buildDirectory
-            .dir("libs")
-            .get()
-            .asFileTree
-            .files
-
-        val commonFileName = "$projectName-$productVer"
-
-        val publishDir = buildDirectory.dir("publications/maven").get()
-
-        val mavenFiles = publishDir
-            .asFileTree
-            .map { file : File ->
-                val newFile = File(publishDir.asFile, when (file.name) {
-                    "pom-default.xml"     -> "$commonFileName.pom"
-                    "pom-default.xml.asc" -> "$commonFileName.pom.asc"
-                    "module.json"         -> "$commonFileName.module"
-                    "module.json.asc"     -> "$commonFileName.module.asc"
-                    else                  -> "$commonFileName.${file.name}"
-                })
-
-                file.renameTo(newFile)
-
-                newFile
-            }
-
-        val files = buildFiles + mavenFiles
-
-        val allFiles = files + files
+        return files
             .flatMap { file ->
                 computeAndSaveFileHash(file, listOf("SHA-256", "SHA-512", "MD5", "SHA-1"))
             }
+    }
+
+    private fun sign(files : List<File>) : List<File> {
+        println("\nSigning...")
+
+        val signer = project.extensions.getByType(SigningExtension::class.java)
+
+        signer
+            .useInMemoryPgpKeys(params.signingKeyId fromProps "signingKeyId",
+                                File(params.signingKeyRingFile fromProps "signingKeyRingFile").text,
+                                params.signingPassFraze fromProps "signingPassFraze")
+
+        return files
+            .map {
+                signer.sign(it)
+
+                File(it.absolutePath + ".asc")
+            }
+    }
+
+    private fun collectFiles() : List<File> {
+        println("\nPrepare...")
+
+        val commonFileName = "$projectName-$productVer"
+
+        return mavenPublish.publishableArtifacts
+            .map { artifact ->
+                val newFile = File(artifact.file.parentFile, when (artifact.file.name) {
+                    "pom-default.xml" -> "$commonFileName.pom"
+                    "module.json"     -> "$commonFileName.module"
+                    else              -> artifact.file.name
+                })
+
+                artifact.file.renameTo(newFile)
+
+                newFile
+            }
+    }
+
+    private fun pack(files : List<File>) {
+        println("\nPacking...")
 
         val path = groupIdValue.str.replace(".", "\\") + "\\$projectName\\$productVer"
 
@@ -198,7 +209,7 @@ open class PublishLib : DefaultTask() {
             .use { zipOut ->
                 val data = ByteArray(1024)
 
-                allFiles
+                files
                     .forEach { file ->
                         FileInputStream(file)
                             .use { stream ->

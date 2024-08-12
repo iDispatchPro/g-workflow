@@ -243,12 +243,6 @@ class GWorkFlow : Plugin<Project> {
         Git.installHooks()
         configureProject()
         createTasks()
-
-        project.tasks
-            .filter { it.name in listOf("publishToMavenLocal", "publish") }
-            .forEach {
-                it.group = null
-            }
     }
 }
 
