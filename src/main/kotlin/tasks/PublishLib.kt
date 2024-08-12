@@ -3,7 +3,7 @@ package tasks
 import computeAndSaveFileHash
 import devFinishName
 import extension
-import extensionName
+import fromScript
 import k.common.*
 import k.serializing.deSerialize
 import okhttp3.*
@@ -14,6 +14,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.internal.publication.MavenPublicationInternal
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
@@ -28,7 +29,7 @@ import java.util.zip.*
 const val keyServer = "https://keyserver.ubuntu.com/pks"
 
 open class PublishLib : DefaultTask() {
-    private lateinit var mavenPublish : MavenPublicationInternal
+    private val mavenPublish = project.extensions.getByType(MavenPublishPlugin::class.java) as MavenPublicationInternal
     private lateinit var groupIdValue : String
 
     private val zipFile = project.layout.buildDirectory.get().asFile.resolve("upload.zip")
@@ -50,7 +51,7 @@ open class PublishLib : DefaultTask() {
 
         project
             .afterEvaluate {
-                groupIdValue = extension.groupId.get() mustBeSpecified "$extensionName.group"
+                groupIdValue = extension.groupId fromScript "group"
 
                 extensions.configure<PublishingExtension>("publishing") {
                     publications {
@@ -61,22 +62,26 @@ open class PublishLib : DefaultTask() {
                             artifactId = projectName
                             version = productVer
 
-                            pom.url = extension.projectUrl.get() mustBeSpecified "$extensionName.projectUrl"
-                            pom.description = extension.projectDescription.get() mustBeSpecified "$extensionName.projectDescription"
+                            val projectUrl = extension.projectUrl fromScript "projectUrl"
 
-                            pom.scm { url = "http://x.y.zz" }
-                            //pom.issueManagement { url = "https://x.y.zzz" }
+                            pom.url = projectUrl
+                            pom.description = extension.projectDescription fromScript "projectDescription"
+
+                            pom.scm {
+                                url = extension.scmUrl.orNull ?: projectUrl
+                            }
+
                             pom.licenses {
                                 license {
-                                    url = "http://x.y.zzzz"
-                                }
-                            }
-                            pom.developers {
-                                developer {
-                                    url = "http://x.y.zzzzz"
+                                    url = extension.licenseUrl.orNull ?: projectUrl
                                 }
                             }
 
+                            pom.developers {
+                                developer {
+                                    url = extension.developerUrl.orNull ?: projectUrl
+                                }
+                            }
                         } as MavenPublicationInternal
                     }
 
@@ -131,10 +136,17 @@ open class PublishLib : DefaultTask() {
         }
     }
 
+    private infix fun String?.fromProps(name : String) =
+        mustBeSpecified("$name in *.properties file")
+
     private fun sign() {
         println("\nSigning artifacts...")
 
         val signer = project.extensions.getByType(SigningExtension::class.java)
+
+        signer.useInMemoryPgpKeys(params.signingKeyId fromProps "signingKeyId",
+                                  File(params.signingKeyRingFile fromProps "signingKeyRingFile").text,
+                                  params.signingPassFraze fromProps "signingPassFraze")
 
         mavenPublish.publishableArtifacts
             .forEach {

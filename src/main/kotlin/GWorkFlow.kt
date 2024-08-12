@@ -164,11 +164,13 @@ class GWorkFlow : Plugin<Project> {
                 config.setFrom("$buildDir/$DETEKT_CONFIG")
             }
 
+            val jdk = extension.jdk.orNull ?: "21"
+
             project.extensions.getByType<JavaToolchainService>().launcherFor {
-                languageVersion.set(JavaLanguageVersion.of(extension.jdk.get()))
+                languageVersion.set(JavaLanguageVersion.of(jdk))
             }
 
-            java.toolchain.languageVersion.set(JavaLanguageVersion.of(extension.jdk.get()))
+            java.toolchain.languageVersion.set(JavaLanguageVersion.of(jdk))
 
             project.gradle.startParameter.maxWorkerCount = 8
             project.gradle.startParameter.isParallelProjectExecutionEnabled = true
@@ -241,6 +243,12 @@ class GWorkFlow : Plugin<Project> {
         Git.installHooks()
         configureProject()
         createTasks()
+
+        project.tasks
+            .filter { it.name in listOf("publishToMavenLocal", "publish") }
+            .forEach {
+                it.group = null
+            }
     }
 }
 

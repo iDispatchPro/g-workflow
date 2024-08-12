@@ -13,11 +13,13 @@ data class Parameters(val registryUrl : String,
                       val mavenLogin : String,
                       val mavenPassword : String,
                       @Optional
-                      @Name("signing.keyId")
                       val signingKeyId : String,
                       @Optional
-                      @Name("signing.publicKeyFile")
-                      val signingPublicKeyFile : String) {
+                      val signingPublicKeyFile : String,
+                      @Optional
+                      val signingKeyRingFile : String,
+                      @Optional
+                      val signingPassFraze : String) {
     val registry : DockerRegistry
         get() = DockerRegistry(registryUrl.list.first(), registryLogin, registryPassword)
 }
