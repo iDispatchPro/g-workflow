@@ -12,6 +12,7 @@ open class Extension(objectFactory : ObjectFactory) {
     val scmUrl : Property<String> = objectFactory.property(String::class.java)
     val licenseUrl : Property<String> = objectFactory.property(String::class.java)
     val developerUrl : Property<String> = objectFactory.property(String::class.java)
+    val codeCheckFile : Property<String> = objectFactory.property(String::class.java)
 
     val jdk : Property<String> = objectFactory.property(String::class.java)
     val skipImageCheck : Property<Boolean> = objectFactory.property(Boolean::class.java)

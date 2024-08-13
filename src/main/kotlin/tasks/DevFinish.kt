@@ -1,6 +1,7 @@
 package tasks
 
 import buildName
+import checkName
 import cleanName
 import imagesName
 import org.gradle.api.DefaultTask
@@ -18,7 +19,7 @@ open class DevFinish : DefaultTask() {
 
                 project.tasks.getByName(buildName).mustRunAfter(resourcesName)
 
-                dependsOn(resourcesName)
+                dependsOn(resourcesName, checkName)
 
                 project.tasks.getByName(resourcesName).dependsOn(cleanName)
             }

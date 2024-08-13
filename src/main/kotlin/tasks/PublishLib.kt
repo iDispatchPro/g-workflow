@@ -52,63 +52,51 @@ open class PublishLib : DefaultTask() {
             .afterEvaluate {
                 groupIdValue = extension.groupId fromScript "group"
 
-                extensions.configure<PublishingExtension>("publishing") {
-                    publications {
-                        mavenPublish = create<MavenPublication>("Maven") {
-                            from(project.components["java"])
+                project.extensions.getByType(PublishingExtension::class.java)
+                    .apply {
+                        //extensions.configure<PublishingExtension>("publishing") {
+                        publications {
+                            mavenPublish = create<MavenPublication>("Maven") {
+                                from(project.components["java"])
 
-                            groupId = groupIdValue
-                            artifactId = projectName
-                            version = productVer
+                                groupId = groupIdValue
+                                artifactId = projectName
+                                version = productVer
 
-                            val projectUrl = extension.projectUrl fromScript "projectUrl"
+                                val projectUrl = extension.projectUrl fromScript "projectUrl"
 
-                            pom.url = projectUrl
-                            pom.description = extension.projectDescription fromScript "projectDescription"
+                                pom.url = projectUrl
+                                pom.description = extension.projectDescription fromScript "projectDescription"
 
-                            pom.scm {
-                                url = extension.scmUrl.orNull ?: projectUrl
-                            }
+                                pom.scm {
+                                    url = extension.scmUrl.orNull ?: projectUrl
+                                }
 
-                            pom.licenses {
-                                license {
-                                    url = extension.licenseUrl.orNull ?: projectUrl
+                                pom.licenses {
+                                    license {
+                                        url = extension.licenseUrl.orNull ?: projectUrl
+                                    }
+                                }
+
+                                pom.developers {
+                                    developer {
+                                        url = extension.developerUrl.orNull ?: projectUrl
+                                    }
+                                }
+                            } as MavenPublicationInternal
+                        }
+
+                        repositories {
+                            maven {
+                                url = params.mavenPluginsURL
+
+                                credentials {
+                                    username = params.mavenLogin
+                                    password = params.mavenPassword
                                 }
                             }
-
-                            pom.developers {
-                                developer {
-                                    url = extension.developerUrl.orNull ?: projectUrl
-                                }
-                            }
-                        } as MavenPublicationInternal
-                    }
-
-                    repositories {
-                        maven {
-                            url = params.mavenPluginsURL
-
-                            credentials {
-                                username = params.mavenLogin
-                                password = params.mavenPassword
-                            }
                         }
                     }
-
-                    project.tasks
-                        .filter {
-                            it.name in listOf("publishToMavenLocal",
-                                              "publish",
-                                              "generateMetadataFileForMavenPublication",
-                                              "generatePomFileForMavenPublication",
-                                              "publishAllPublicationsToMavenRepository",
-                                              "publishMavenPublicationToMavenLocal",
-                                              "publishMavenPublicationToMavenRepository")
-                        }
-                        .forEach {
-                            it.group = null
-                        }
-                }
             }
     }
 

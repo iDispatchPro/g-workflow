@@ -1,5 +1,5 @@
 import Extension.Companion.toExtension
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import io.gitlab.arturbosch.detekt.DetektPlugin
 import k.common.*
 import k.docker.models.Image
 import k.serializing.deSerialize
@@ -123,7 +123,7 @@ class GWorkFlow : Plugin<Project> {
 
             project.plugins.apply("org.jetbrains.kotlin.jvm")
             project.plugins.apply("java")
-            project.plugins.apply("io.gitlab.arturbosch.detekt")
+            //project.plugins.apply("io.gitlab.arturbosch.detekt")
 
             //project.dependencies.add("testImplementation", "org.jetbrains.kotlin:kotlin-test-junit5:1.9.10")
             project.dependencies.add("implementation", "org.testng:testng:7.9.0")
@@ -139,8 +139,8 @@ class GWorkFlow : Plugin<Project> {
 
                 project.pluginManager.apply(MavenPublishPlugin::class.java)
                 project.pluginManager.apply(SigningPlugin::class.java)
+                project.pluginManager.apply(DetektPlugin::class.java)
                 project.pluginManager.apply(JavaLibraryPlugin::class.java)
-                //project.pluginManager.apply(VersionCatalogPlugin::class.java)
 
                 val javaSources = project.extensions.getByType(SourceSetContainer::class.java)
 
@@ -154,15 +154,6 @@ class GWorkFlow : Plugin<Project> {
             }
             else
                 project.plugins.apply("application")
-
-            project.extensions.getByType(DetektExtension::class.java).apply {
-                allRules = true
-                parallel = true
-                buildUponDefaultConfig = true
-                ignoreFailures = true
-
-                config.setFrom("$buildDir/$DETEKT_CONFIG")
-            }
 
             val jdk = extension.jdk.orNull ?: "21"
 
@@ -179,12 +170,12 @@ class GWorkFlow : Plugin<Project> {
         fun createTasks() {
             createTask<Check>(checkName)
             createTask<Clean>(cleanName)
-            createTask<RemoveImages>(removeImages)
-            createTask<RemoveVolumes>(removeVolumes)
-            createTask<PrepareEnv>(envUpName)
-            createTask<ShutdownEnv>(envDownName)
+            //createTask<RemoveImages>(removeImages)
+            //createTask<RemoveVolumes>(removeVolumes)
+            //createTask<PrepareEnv>(envUpName)
+            //createTask<ShutdownEnv>(envDownName)
 
-            project.tasks.create("$GLOBAL_PREFIX-get-app-version") {
+            project.tasks.create("$GLOBAL_PREFIX-version") {
                 group = taskGroupMore
 
                 doLast {
@@ -192,7 +183,7 @@ class GWorkFlow : Plugin<Project> {
                 }
             }
 
-            project.tasks.create("$GLOBAL_PREFIX-get-app-name") {
+            project.tasks.create("$GLOBAL_PREFIX-name") {
                 group = taskGroupMore
 
                 doLast {
