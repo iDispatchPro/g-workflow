@@ -1,16 +1,47 @@
 import Extension.Companion.toExtension
 import io.gitlab.arturbosch.detekt.DetektPlugin
-import k.common.*
+import k.common.env
+import k.common.low
+import k.common.mustBeFound
+import k.common.orThrow
+import k.common.str
 import k.docker.models.Image
 import k.serializing.deSerialize
-import org.gradle.api.*
-import org.gradle.api.plugins.*
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.plugins.JavaLibraryPlugin
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.jvm.toolchain.*
-import org.gradle.kotlin.dsl.*
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.repositories
 import org.gradle.plugins.signing.SigningPlugin
-import tasks.*
+import tasks.Build
+import tasks.Check
+import tasks.Clean
+import tasks.Deploy
+import tasks.DevFinish
+import tasks.Images
+import tasks.LibDevFinish
+import tasks.LibTests
+import tasks.PrepareEnv
+import tasks.Publish
+import tasks.PublishLib
+import tasks.Run
+import tasks.ShutdownEnv
+import tasks.Tests
+import tasks.dockerFile
+import tasks.hasEnv
+import tasks.version.CheckBranchTask
+import tasks.version.DAV
+import tasks.version.Major
+import tasks.version.Minor
+import tasks.version.Patch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,6 +56,7 @@ const val gradlePropsFile = "gradle.properties"
 const val localPropsFile = "gradle-local.properties"
 val myPropsFile = "$instancesLabel.properties"
 const val VERSION_FILE = "version.txt"
+const val envDir = "env"
 
 val deployName = "$GLOBAL_PREFIX-deploy"
 val testName = "$GLOBAL_PREFIX-test"
@@ -35,30 +67,30 @@ val imagesName = "$GLOBAL_PREFIX-images"
 val envUpName = "$GLOBAL_PREFIX-env-up"
 val envDownName = "$GLOBAL_PREFIX-env-down"
 val removeImages = "$GLOBAL_PREFIX-remove-images"
-val removeVolumes = "$GLOBAL_PREFIX-remove-volumes"
 val cleanName = "$GLOBAL_PREFIX-clean"
 val runName = "$GLOBAL_PREFIX-run"
 val devFinishName = "$GLOBAL_PREFIX-dev-finish"
 
+val checkBranchName = "$GLOBAL_PREFIX-check-branch"
 val toReleaseName = "$GLOBAL_PREFIX-release"
 
 val releaseMajorName = "$GLOBAL_PREFIX-release-major"
 val releaseMinorName = "$GLOBAL_PREFIX-release-minor"
 val releasePatchName = "$GLOBAL_PREFIX-release-patch"
 
-lateinit var jarName : String
-lateinit var fullJarName : String
-lateinit var productVer : String
-lateinit var projectName : String
-lateinit var buildDir : String
-lateinit var projectDir : String
-lateinit var versionFile : File
-lateinit var dateStr : String
-lateinit var extension : Extension
+lateinit var jarName: String
+lateinit var fullJarName: String
+lateinit var productVer: String
+lateinit var projectName: String
+lateinit var buildDir: String
+lateinit var projectDir: String
+lateinit var versionFile: File
+lateinit var dateStr: String
+lateinit var extension: Extension
 
-var isMainBranch : Boolean = false
+var isMainBranch: Boolean = false
 
-val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
+val params: Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
         + env(gradlePropsFile)
         + env(localPropsFile)
         + env(myPropsFile)).deSerialize<Parameters>()
@@ -70,15 +102,15 @@ fun isLib() =
     mainFiles.isEmpty()
 
 class GWorkFlow : Plugin<Project> {
-    private lateinit var project : Project
+    private lateinit var project: Project
 
-    private inline fun <reified T : Task> createTask(name : String, groupName : String = taskGroupMain) =
+    private inline fun <reified T : Task> createTask(name: String, groupName: String = taskGroupMain) =
         project.tasks.create(name, T::class.java) { group = groupName }
 
-    override fun apply(project : Project) {
+    override fun apply(project: Project) {
         extension = project.toExtension(project.objects)
 
-        val branch = Git.getBranch()
+        val branch = Git.branch
 
         isMainBranch = branch in listOf("main", "master", "prod", "")
 
@@ -170,10 +202,11 @@ class GWorkFlow : Plugin<Project> {
         fun createTasks() {
             createTask<Check>(checkName)
             createTask<Clean>(cleanName)
-            //createTask<RemoveImages>(removeImages)
-            //createTask<RemoveVolumes>(removeVolumes)
-            //createTask<PrepareEnv>(envUpName)
-            //createTask<ShutdownEnv>(envDownName)
+
+            if (hasEnv) {
+                createTask<PrepareEnv>(envUpName)
+                createTask<ShutdownEnv>(envDownName)
+            }
 
             project.tasks.create("$GLOBAL_PREFIX-version") {
                 group = taskGroupMore
@@ -190,6 +223,15 @@ class GWorkFlow : Plugin<Project> {
                     println(project.name)
                 }
             }
+
+            project.tasks.create<CheckBranchTask>(checkBranchName) {
+                group = taskGroupMore
+            }
+
+            createTask<DAV>(toReleaseName)
+            createTask<Major>(releaseMajorName)
+            createTask<Minor>(releaseMinorName)
+            createTask<Patch>(releasePatchName)
 
             if (isLib()) {
                 createTask<PublishLib>(deployName)
@@ -214,14 +256,6 @@ class GWorkFlow : Plugin<Project> {
 
                 createTask<Deploy>(deployName)
                 createTask<Publish>(publishName)
-
-                if (versionFile.exists())
-                    createTask<ToRelease>(toReleaseName)
-                else {
-                    createTask<ReleaseMajor>(releaseMajorName)
-                    createTask<ReleaseMinor>(releaseMinorName)
-                    createTask<ReleasePatch>(releasePatchName)
-                }
 
                 createTask<Images>(imagesName)
                 createTask<Run>(runName)

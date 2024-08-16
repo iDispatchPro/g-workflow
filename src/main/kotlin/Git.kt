@@ -1,26 +1,34 @@
-import k.common.*
+import k.common.cmdLine
+import k.common.mustBeSpecified
+import k.common.resource
+import k.common.same
+import k.common.text
 import k.stream.text
 import java.io.File
 
 object Git {
-    fun commit(name : String, version : String) {
+    fun commit(message: String) {
         cmdLine("git add --all")
-        cmdLine("git commit -m 'chore($name): $version'")
-
-        tag(version)
+        cmdLine("git commit -m '$message'")
     }
+
+    val changes
+        get() = cmdLine("git status -s")
+
+    val status
+        get() = cmdLine("git status")
 
     fun getTag() =
         cmdLine("git describe --tags --abbrev=0")
 
-    fun tag(version : String) {
+    fun tag(version: String) {
         val commitHash = cmdLine("git rev-parse --short HEAD")
 
         cmdLine("git tag -a v$version $commitHash -m v$version")
     }
 
-    fun getBranch() =
-        try {
+    val branch
+        get() = try {
             val branch = cmdLine("git rev-parse --abbrev-ref HEAD")
 
             if (branch same "HEAD")
@@ -28,7 +36,7 @@ object Git {
             else
                 branch
         }
-        catch (_ : Throwable) {
+        catch (_: Throwable) {
             ""
         }
 

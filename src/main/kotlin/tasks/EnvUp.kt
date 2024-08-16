@@ -1,6 +1,7 @@
 package tasks
 
 import buildDir
+import envDir
 import imagesName
 import k.common.*
 import org.gradle.api.DefaultTask
@@ -34,11 +35,14 @@ class Compose(val dir : String) {
         doAction("down")
 }
 
-fun prepareEnv() {
-    if (File(projectDir, "env").exists()) {
-        buildImages("env", "$projectName-test")
+val hasEnv
+    get() = File(projectDir, envDir).exists()
 
-        Compose("env").start()
+fun prepareEnv() {
+    if (hasEnv) {
+        buildImages(envDir, "$projectName-test")
+
+        Compose(envDir).start()
     }
 }
 

@@ -133,9 +133,9 @@ open class PublishLib : DefaultTask() {
             handleResponse(publish, "upload public key")
         }
         else {
-            println("\nKey found. Use existing...")
-
             handleResponse(check, "check public key")
+
+            println("\nKey found. Use existing...")
         }
     }
 
@@ -256,6 +256,6 @@ open class PublishLib : DefaultTask() {
         val responseBody = response.body?.string()
 
         if (!response.isSuccessful)
-            error("Failed to $failureMessage\nHTTP Status Code: ${response.code}\nError Message: ${errorExtractor(responseBody ?: "")}")
+            error("Failed to $failureMessage\nHTTP Status Code: ${response.code}\nError Message: ${errorExtractor(responseBody.orEmpty())}")
     }
 }

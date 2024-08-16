@@ -5,7 +5,7 @@ plugins {
     `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.2.1"
     `maven-publish`
-    id("org.jetbrains.kotlin.jvm") version "2.0.0"
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
 dependencies {
