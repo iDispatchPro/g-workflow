@@ -4,6 +4,7 @@ import computeAndSaveFileHash
 import devFinishName
 import extension
 import fromScript
+import isMainBranch
 import k.common.*
 import k.serializing.deSerialize
 import okhttp3.*
@@ -27,13 +28,15 @@ import java.util.zip.*
 
 const val keyServer = "https://keyserver.ubuntu.com/pks"
 
-open class PublishLib : DefaultTask() {
+open class PublishLib : DefaultTask()
+{
     private lateinit var mavenPublish : MavenPublicationInternal
     private lateinit var groupIdValue : String
 
     private val zipFile = project.layout.buildDirectory.get().asFile.resolve("upload.zip")
 
-    init {
+    init
+    {
         description = "Publish a library to maven repository."
 
         /*val publishStdName = "publish${projectName.title}PublicationToMavenRepository"
@@ -42,11 +45,15 @@ open class PublishLib : DefaultTask() {
 
         dependsOn(publishStdName, devFinishName)*/
 
-        dependsOn(devFinishName,
-                  "javadocJar",
-                  "sourcesJar",
-                  "generatePomFileForMavenPublication",
-                  "generateMetadataFileForMavenPublication")
+        if (isMainBranch)
+            dependsOn(devFinishName,
+                      "javadocJar",
+                      "sourcesJar",
+                      "generatePomFileForMavenPublication",
+                      "generateMetadataFileForMavenPublication")
+        else
+            dependsOn(devFinishName,
+                      "publishToMavenLocal")
 
         project
             .afterEvaluate {
@@ -54,7 +61,6 @@ open class PublishLib : DefaultTask() {
 
                 project.extensions.getByType(PublishingExtension::class.java)
                     .apply {
-                        //extensions.configure<PublishingExtension>("publishing") {
                         publications {
                             mavenPublish = create<MavenPublication>("Maven") {
                                 from(project.components["java"])
@@ -87,40 +93,56 @@ open class PublishLib : DefaultTask() {
                         }
 
                         repositories {
-                            maven {
-                                url = params.mavenPluginsURL
+                            if (isMainBranch)
+                            {
+                                maven {
+                                    url = params.mavenPluginsURL
 
-                                credentials {
-                                    username = params.mavenLogin
-                                    password = params.mavenPassword
+                                    credentials {
+                                        username = params.mavenLogin
+                                        password = params.mavenPassword
+                                    }
                                 }
                             }
+                            else
+                                mavenLocal()
                         }
                     }
             }
     }
 
     @TaskAction
-    fun action() {
-        ensureKey()
+    fun action()
+    {
+        if (isMainBranch)
+        {
+            ensureKey()
 
-        val files = collectFiles()
+            val files = collectFiles()
 
-        pack(files + hash(files) + sign(files))
-        upload()
+            pack(files + hash(files) + sign(files))
+            upload()
+        }
 
-        msg("\nPlease use this line for importing library:".n, MsgType.BlueText)
+        val target = if (isMainBranch)
+            "Maven Central"
+        else
+            "Maven Local"
+
+        msg("\nPlease use this line for importing library from $target:".n, MsgType.BlueText)
         msg("""implementation("$groupIdValue:$projectName:$productVer")""".n, MsgType.OrangeText)
     }
 
-    private fun ensureKey() {
+    private fun ensureKey()
+    {
         println("\nLook for public key in $keyServer...")
 
         val check = call(Request.Builder()
                              .get()
                              .url("$keyServer/lookup?search=${params.signingKeyId}&fingerprint=on&op=index"))
 
-        if (check.code == 404) {
+        if (check.code == 404)
+        {
             println("\nKey not found. Try to upload...")
 
             val body = "keytext=${File(params.signingPublicKeyFile).text mustBeFound params.signingPublicKeyFile}"
@@ -132,7 +154,8 @@ open class PublishLib : DefaultTask() {
 
             handleResponse(publish, "upload public key")
         }
-        else {
+        else
+        {
             handleResponse(check, "check public key")
 
             println("\nKey found. Use existing...")
@@ -142,7 +165,8 @@ open class PublishLib : DefaultTask() {
     private infix fun String?.fromProps(name : String) =
         mustBeSpecified("$name in *.properties file")
 
-    private fun hash(files : List<File>) : List<File> {
+    private fun hash(files : List<File>) : List<File>
+    {
         println("\nHashing...")
 
         return files
@@ -151,7 +175,8 @@ open class PublishLib : DefaultTask() {
             }
     }
 
-    private fun sign(files : List<File>) : List<File> {
+    private fun sign(files : List<File>) : List<File>
+    {
         println("\nSigning...")
 
         val signer = project.extensions.getByType(SigningExtension::class.java)
@@ -169,14 +194,16 @@ open class PublishLib : DefaultTask() {
             }
     }
 
-    private fun collectFiles() : List<File> {
+    private fun collectFiles() : List<File>
+    {
         println("\nPrepare...")
 
         val commonFileName = "$projectName-$productVer"
 
         return mavenPublish.publishableArtifacts
             .map { artifact ->
-                val newFile = File(artifact.file.parentFile, when (artifact.file.name) {
+                val newFile = File(artifact.file.parentFile, when (artifact.file.name)
+                {
                     "pom-default.xml" -> "$commonFileName.pom"
                     "module.json"     -> "$commonFileName.module"
                     else              -> artifact.file.name
@@ -188,7 +215,8 @@ open class PublishLib : DefaultTask() {
             }
     }
 
-    private fun pack(files : List<File>) {
+    private fun pack(files : List<File>)
+    {
         println("\nPacking...")
 
         val path = groupIdValue.str.replace(".", "\\") + "\\$projectName\\$productVer"
@@ -205,7 +233,8 @@ open class PublishLib : DefaultTask() {
 
                                 var length = stream.read(data)
 
-                                while (length != -1) {
+                                while (length != -1)
+                                {
                                     zipOut.write(data, 0, length)
                                     length = stream.read(data)
                                 }
@@ -218,7 +247,8 @@ open class PublishLib : DefaultTask() {
             }
     }
 
-    private fun upload() {
+    private fun upload()
+    {
         val name = URLEncoder.encode("$groupIdValue:$projectName:$productVer", UTF_8)
 
         val url = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=$name"
@@ -252,7 +282,8 @@ open class PublishLib : DefaultTask() {
 
     private fun handleResponse(response : Response,
                                failureMessage : String,
-                               errorExtractor : (String) -> String = { it }) {
+                               errorExtractor : (String) -> String = { it })
+    {
         val responseBody = response.body?.string()
 
         if (!response.isSuccessful)

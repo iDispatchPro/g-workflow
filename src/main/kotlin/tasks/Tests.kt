@@ -6,8 +6,10 @@ import org.gradle.api.tasks.*
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 
-open class Tests : Test() {
-    init {
+open class Tests : Test()
+{
+    init
+    {
         description = "Running project tests with a pre-created test environment ($envUpName)."
 
         dependsOn(buildName)
@@ -30,7 +32,8 @@ open class Tests : Test() {
     }
 
     @TaskAction
-    fun action() {
+    fun action()
+    {
         // prepareEnv()
 
         //removeEnv()

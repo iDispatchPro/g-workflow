@@ -8,11 +8,14 @@ import java.io.File
 
 const val DETEKT_CONFIG = "detekt.yaml"
 
-open class Check : DefaultTask() {
-    init {
+open class Check : DefaultTask()
+{
+    init
+    {
         description = "Code quality check."
 
-        if (File(DETEKT_CONFIG).exists()) {
+        if (File(DETEKT_CONFIG).exists())
+        {
             project.extensions.getByType(DetektExtension::class.java).apply {
                 allRules = true
                 parallel = true
@@ -26,7 +29,8 @@ open class Check : DefaultTask() {
     }
 
     @TaskAction
-    fun action() {
+    fun action()
+    {
         if (!File(DETEKT_CONFIG).exists())
             println("$DETEKT_CONFIG doesn't exist")
     }

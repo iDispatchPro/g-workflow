@@ -12,8 +12,8 @@ dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("ru.old-scool-geek:k-lib-common:24.8.12.1455")
-    implementation("k:lib-docker:24.7.9.1706")
+    implementation("ru.old-scool-geek:k-lib-common:24.8.19.1043")
+    implementation("ru.old-scool-geek:k-lib-docker:24.8.19.1122")
 
     implementation("org.testng:testng:7.10.2")
 

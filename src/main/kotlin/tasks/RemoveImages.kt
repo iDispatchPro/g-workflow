@@ -8,8 +8,10 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import pluginName
 
-open class RemoveImages : DefaultTask() {
-    init {
+open class RemoveImages : DefaultTask()
+{
+    init
+    {
         description = "Deleting built with $pluginName and unnamed local images."
 
         mustRunAfter(envDownName)

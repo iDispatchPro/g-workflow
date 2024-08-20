@@ -1,47 +1,17 @@
 import Extension.Companion.toExtension
 import io.gitlab.arturbosch.detekt.DetektPlugin
-import k.common.env
-import k.common.low
-import k.common.mustBeFound
-import k.common.orThrow
-import k.common.str
+import k.common.*
 import k.docker.models.Image
 import k.serializing.deSerialize
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.plugins.JavaLibraryPlugin
-import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.*
+import org.gradle.api.plugins.*
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.jvm.toolchain.JavaToolchainService
-import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.get
-import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.repositories
+import org.gradle.jvm.toolchain.*
+import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningPlugin
-import tasks.Build
-import tasks.Check
-import tasks.Clean
-import tasks.Deploy
-import tasks.DevFinish
-import tasks.Images
-import tasks.LibDevFinish
-import tasks.LibTests
-import tasks.PrepareEnv
-import tasks.Publish
-import tasks.PublishLib
-import tasks.Run
-import tasks.ShutdownEnv
-import tasks.Tests
-import tasks.dockerFile
-import tasks.hasEnv
-import tasks.version.CheckBranchTask
-import tasks.version.DAV
-import tasks.version.Major
-import tasks.version.Minor
-import tasks.version.Patch
+import tasks.*
+import tasks.version.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -57,6 +27,7 @@ const val localPropsFile = "gradle-local.properties"
 val myPropsFile = "$instancesLabel.properties"
 const val VERSION_FILE = "version.txt"
 const val envDir = "env"
+const val dependencyDir = ".dependencies"
 
 val deployName = "$GLOBAL_PREFIX-deploy"
 val testName = "$GLOBAL_PREFIX-test"
@@ -78,19 +49,19 @@ val releaseMajorName = "$GLOBAL_PREFIX-release-major"
 val releaseMinorName = "$GLOBAL_PREFIX-release-minor"
 val releasePatchName = "$GLOBAL_PREFIX-release-patch"
 
-lateinit var jarName: String
-lateinit var fullJarName: String
-lateinit var productVer: String
-lateinit var projectName: String
-lateinit var buildDir: String
-lateinit var projectDir: String
-lateinit var versionFile: File
-lateinit var dateStr: String
-lateinit var extension: Extension
+lateinit var jarName : String
+lateinit var fullJarName : String
+lateinit var productVer : String
+lateinit var projectName : String
+lateinit var buildDir : String
+lateinit var projectDir : String
+lateinit var versionFile : File
+lateinit var dateStr : String
+lateinit var extension : Extension
 
-var isMainBranch: Boolean = false
+var isMainBranch : Boolean = false
 
-val params: Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
+val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
         + env(gradlePropsFile)
         + env(localPropsFile)
         + env(myPropsFile)).deSerialize<Parameters>()
@@ -101,20 +72,23 @@ val defaultDockerFile
 fun isLib() =
     mainFiles.isEmpty()
 
-class GWorkFlow : Plugin<Project> {
-    private lateinit var project: Project
+class GWorkFlow : Plugin<Project>
+{
+    private lateinit var project : Project
 
-    private inline fun <reified T : Task> createTask(name: String, groupName: String = taskGroupMain) =
+    private inline fun <reified T : Task> createTask(name : String, groupName : String = taskGroupMain) =
         project.tasks.create(name, T::class.java) { group = groupName }
 
-    override fun apply(project: Project) {
+    override fun apply(project : Project)
+    {
         extension = project.toExtension(project.objects)
 
         val branch = Git.branch
 
         isMainBranch = branch in listOf("main", "master", "prod", "")
 
-        fun calcVars() {
+        fun calcVars()
+        {
             this.project = project
             buildDir = project.layout.buildDirectory.get().str
             projectDir = project.projectDir.str
@@ -131,23 +105,28 @@ class GWorkFlow : Plugin<Project> {
             fullJarName = "$buildDir/$jarName"
         }
 
-        fun configureProject() {
+        fun configureProject()
+        {
             project.version = productVer
 
             project
                 .repositories {
-                    maven {
-                        url = project.projectDir.resolve("depends").toURI()
-                    }
-
-                    maven {
-                        url = params.mavenDependsURL
-
-                        credentials {
-                            username = params.mavenLogin
-                            password = params.mavenPassword
+                    if (File(dependencyDir).exists())
+                        maven {
+                            url = project.projectDir.resolve(dependencyDir).toURI()
                         }
-                    }
+
+                    mavenLocal()
+
+                    if (!params.mavenDependsURL.isEmpty)
+                        maven {
+                            url = params.mavenDependsURL
+
+                            credentials {
+                                username = params.mavenLogin
+                                password = params.mavenPassword
+                            }
+                        }
 
                     mavenCentral()
                     gradlePluginPortal()
@@ -158,14 +137,15 @@ class GWorkFlow : Plugin<Project> {
             //project.plugins.apply("io.gitlab.arturbosch.detekt")
 
             //project.dependencies.add("testImplementation", "org.jetbrains.kotlin:kotlin-test-junit5:1.9.10")
-            project.dependencies.add("implementation", "org.testng:testng:7.9.0")
+            project.dependencies.add("implementation", "org.testng:testng:7.10.2")
 
             // fix "java.lang.module.ResolutionException: Modules jetty.servlet.api and jakarta.servlet export package jakarta.servlet.descriptor to module org.testng"
             project.dependencies.add("implementation", "org.eclipse.jetty.toolchain:jetty-servlet-api:4.0.6")
 
             val java = project.extensions.findByType(JavaPluginExtension::class.java) mustBeFound "JavaPluginExtension"
 
-            if (isLib()) {
+            if (isLib())
+            {
                 java.withSourcesJar()
                 java.withJavadocJar()
 
@@ -199,11 +179,13 @@ class GWorkFlow : Plugin<Project> {
             project.gradle.startParameter.isParallelProjectExecutionEnabled = true
         }
 
-        fun createTasks() {
+        fun createTasks()
+        {
             createTask<Check>(checkName)
             createTask<Clean>(cleanName)
 
-            if (hasEnv) {
+            if (hasEnv)
+            {
                 createTask<PrepareEnv>(envUpName)
                 createTask<ShutdownEnv>(envDownName)
             }
@@ -233,12 +215,14 @@ class GWorkFlow : Plugin<Project> {
             createTask<Minor>(releaseMinorName)
             createTask<Patch>(releasePatchName)
 
-            if (isLib()) {
+            if (isLib())
+            {
                 createTask<PublishLib>(deployName)
                 createTask<LibDevFinish>(devFinishName)
                 createTask<LibTests>(testName)
             }
-            else {
+            else
+            {
                 project.tasks.create<Build>(buildName) {
                     group = taskGroupMain
 
