@@ -1,6 +1,5 @@
 package tasks
 
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get

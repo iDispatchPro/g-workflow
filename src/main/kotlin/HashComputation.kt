@@ -14,11 +14,13 @@ fun computeAndSaveFileHash(file : File, shaAlgorithms : List<String>) =
             shaFile
         }
 
-object HashUtils {
+object HashUtils
+{
     const val STREAM_BUFFER_LENGTH = 1024
 
     fun getCheckSumFromFile(digest : MessageDigest,
-                            file : File) : String {
+                            file : File) : String
+    {
         val fis = FileInputStream(file)
         val byteArray = updateDigest(digest, fis).digest()
         fis.close()
@@ -28,11 +30,13 @@ object HashUtils {
     }
 
     private fun updateDigest(digest : MessageDigest,
-                             data : InputStream) : MessageDigest {
+                             data : InputStream) : MessageDigest
+    {
         val buffer = ByteArray(STREAM_BUFFER_LENGTH)
         var read = data.read(buffer, 0, STREAM_BUFFER_LENGTH)
 
-        while (read > -1) {
+        while (read > -1)
+        {
             digest.update(buffer, 0, read)
             read = data.read(buffer, 0, STREAM_BUFFER_LENGTH)
         }
@@ -48,19 +52,21 @@ object HashUtils {
         encodeHex(data, if (toLowerCase) DIGITS_LOWER else DIGITS_UPPER)
 
     fun encodeHex(data : ByteArray,
-                  toDigits : CharArray) : CharArray {
+                  toDigits : CharArray) : CharArray
+    {
         val l = data.size
         val out = CharArray(l shl 1)
         // two characters form the hex value.
         var i = 0
         var j = 0
 
-        while (i < l) {
+        while (i < l)
+        {
             out[j++] = toDigits[0xF0 and data[i].toInt() ushr 4]
             out[j++] = toDigits[0x0F and data[i].toInt()]
             i++
         }
-        
+
         return out
     }
 }

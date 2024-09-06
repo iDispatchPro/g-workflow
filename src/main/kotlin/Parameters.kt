@@ -6,11 +6,15 @@ import java.net.URI
 data class Parameters(val registryUrl : String,
                       @Optional
                       val registryLogin : String,
-                      @Optional("")
+                      @Optional
                       val registryPassword : String,
+                      @Optional
                       val mavenDependsURL : URI,
+                      @Optional
                       val mavenPluginsURL : URI,
+                      @Optional
                       val mavenLogin : String,
+                      @Optional
                       val mavenPassword : String,
                       @Optional
                       val signingKeyId : String,
@@ -19,7 +23,8 @@ data class Parameters(val registryUrl : String,
                       @Optional
                       val signingKeyRingFile : String,
                       @Optional
-                      val signingPassFraze : String) {
+                      val signingPassFraze : String)
+{
     val registry : DockerRegistry
         get() = DockerRegistry(registryUrl.list.first(), registryLogin, registryPassword)
 }

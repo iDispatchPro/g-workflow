@@ -10,8 +10,10 @@ import org.gradle.api.tasks.bundling.Jar
 import productVer
 import java.io.File
 
-open class Build : Jar() {
-    init {
+open class Build : Jar()
+{
+    init
+    {
         description = "Build a jar with all dependencies and the correct version."
 
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -32,7 +34,8 @@ open class Build : Jar() {
     }
 
     @TaskAction
-    fun action() {
+    fun action()
+    {
         msg("\n$jarName was built\n\n", MsgType.OrangeText)
     }
 }

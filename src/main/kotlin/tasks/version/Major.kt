@@ -6,7 +6,8 @@ import k.common.text
 import org.gradle.api.tasks.Internal
 import versionFile
 
-open class Major : ReleaseTask() {
+open class Major : ReleaseTask()
+{
     @Internal
     override fun getNewVersion() =
         getVersion().also {
@@ -16,7 +17,8 @@ open class Major : ReleaseTask() {
         }
 
     @Internal
-    fun getVersion(): Version {
+    fun getVersion() : Version
+    {
         checkVersionFormat("Major.Minor.Patch", versionPartsCount)
 
         val parts = (versionFile.text default "0.0.0")

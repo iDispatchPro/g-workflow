@@ -13,7 +13,6 @@ import k.common.n
 import k.common.orThrow
 import k.common.str
 import k.common.text
-import k.common.title
 import k.common.tryProc
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Internal
@@ -21,8 +20,10 @@ import org.gradle.api.tasks.TaskAction
 import versionFile
 import java.io.File
 
-abstract class ReleaseTask : DefaultTask() {
-    init {
+abstract class ReleaseTask : DefaultTask()
+{
+    init
+    {
         description = "Update to next $id version"
 
         dependsOn(devFinishName, checkBranchName)
@@ -32,7 +33,8 @@ abstract class ReleaseTask : DefaultTask() {
         get() = className.low - "release" - "_decorated"
 
     @TaskAction
-    fun action() {
+    fun action()
+    {
         versionFile.writeText(getNewVersion().str)
 
         val newVersion = versionFile.text mustBeSpecified "Version in $versionFile"
@@ -48,9 +50,9 @@ abstract class ReleaseTask : DefaultTask() {
     }
 
     @Internal
-    protected abstract fun getNewVersion(): Any
+    protected abstract fun getNewVersion() : Any
 
     @Internal
-    fun checkVersionFormat(format : String, partsCount: Int) =
+    fun checkVersionFormat(format : String, partsCount : Int) =
         ((versionFile.text?.split('.')?.size ?: partsCount) == partsCount) orThrow "Incompatible version format ($format). To change it, delete the file version.txt."
 }

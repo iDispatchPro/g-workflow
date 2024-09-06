@@ -11,8 +11,10 @@ import kotlin.io.path.nameWithoutExtension
 
 const val davPartsCount = 4
 
-open class DAV : ReleaseTask() {
-    override fun getNewVersion(): Any {
+open class DAV : ReleaseTask()
+{
+    override fun getNewVersion() : Any
+    {
         checkVersionFormat("Date As Version", davPartsCount)
 
         val attempt = Path.of(dateStr).extension.int + (productVer == dateStr).choose(1, 0)

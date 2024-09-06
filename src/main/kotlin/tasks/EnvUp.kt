@@ -10,13 +10,16 @@ import projectDir
 import projectName
 import java.io.File
 
-class Compose(val dir : String) {
+class Compose(val dir : String)
+{
     private val filePath = "$dir/compose.yaml"
     private val sourceFile = File("$projectDir/$filePath")
     private val composeFile = File("$buildDir/$filePath")
 
-    private fun doAction(cmd : String) {
-        if (sourceFile.exists()) {
+    private fun doAction(cmd : String)
+    {
+        if (sourceFile.exists())
+        {
             composeFile.parentFile.mkdirs()
             sourceFile.parentFile.copyRecursively(composeFile.parentFile, true)
 
@@ -38,16 +41,20 @@ class Compose(val dir : String) {
 val hasEnv
     get() = File(projectDir, envDir).exists()
 
-fun prepareEnv() {
-    if (hasEnv) {
+fun prepareEnv()
+{
+    if (hasEnv)
+    {
         buildImages(envDir, "$projectName-test")
 
         Compose(envDir).start()
     }
 }
 
-open class PrepareEnv : DefaultTask() {
-    init {
+open class PrepareEnv : DefaultTask()
+{
+    init
+    {
         description = "Building images for Docker files and running the compose.yaml from the Env directory."
 
         dependsOn(imagesName)
