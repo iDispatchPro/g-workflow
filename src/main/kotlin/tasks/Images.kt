@@ -17,7 +17,6 @@ import patched
 import productVer
 import projectDir
 import projectName
-import testName
 import java.io.File
 
 const val dockerFile = "dockerfile"

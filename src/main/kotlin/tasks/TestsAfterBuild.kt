@@ -1,25 +1,26 @@
 package tasks
 
-import GLOBAL_PREFIX
 import buildName
+import imagesName
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 
-val testName = "$GLOBAL_PREFIX-test"
+const val testGroup = "AfterBuild"
+val testsAfterBuildName = "$testName-after-build"
 
-open class Tests : Test()
+open class TestsAfterBuild : Test()
 {
     init
     {
-        description = "Running project tests (group != $testGroup)"
+        description = "Running project tests (group = $testGroup) with a production bundle"
 
-        dependsOn(buildName)
+        dependsOn(imagesName)
 
         useTestNG {
             parallel = "methods"
             threadCount = 10
-            excludeGroups = setOf(testGroup)
+            includeGroups = setOf(testGroup)
         }
 
         /*useJUnit {

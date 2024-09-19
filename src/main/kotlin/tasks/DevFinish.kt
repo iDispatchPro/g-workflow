@@ -5,7 +5,6 @@ import checkName
 import cleanName
 import imagesName
 import org.gradle.api.DefaultTask
-import testName
 
 const val resourcesName = "buildResources"
 
@@ -30,6 +29,7 @@ open class DevFinish : DefaultTask()
 
         dependsOn(cleanName,
                   testName,
+                  testsAfterBuildName,
                   imagesName)
 
         project.tasks.getByName("compileKotlin").mustRunAfter(cleanName)

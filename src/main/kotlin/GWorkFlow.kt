@@ -30,7 +30,6 @@ const val envDir = "env"
 const val dependencyDir = ".dependencies"
 
 val deployName = "$GLOBAL_PREFIX-deploy"
-val testName = "$GLOBAL_PREFIX-test"
 val publishName = "$GLOBAL_PREFIX-publish"
 val buildName = "$GLOBAL_PREFIX-build"
 val checkName = "$GLOBAL_PREFIX-check"
@@ -245,6 +244,7 @@ class GWorkFlow : Plugin<Project>
                 createTask<Run>(runName)
                 createTask<DevFinish>(devFinishName)
                 createTask<Tests>(testName)
+                createTask<TestsAfterBuild>(testsAfterBuildName)
             }
         }
 

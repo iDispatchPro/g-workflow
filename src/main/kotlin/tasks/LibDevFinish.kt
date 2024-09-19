@@ -3,7 +3,6 @@ package tasks
 import checkName
 import cleanName
 import org.gradle.api.DefaultTask
-import testName
 
 open class LibDevFinish : DefaultTask()
 {
