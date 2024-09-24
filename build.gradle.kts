@@ -12,8 +12,8 @@ dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("ru.old-scool-geek:k-lib-common:24.8.19.1043")
-    implementation("ru.old-scool-geek:k-lib-docker:24.8.19.1122")
+    implementation("ru.old-scool-geek:k-lib-common:24.9.22.0906")
+    implementation("ru.old-scool-geek:k-lib-docker:24.9.11.1438")
 
     implementation("org.testng:testng:7.10.2")
 
@@ -99,6 +99,8 @@ tasks.register("g-deploy") {
 }
 
 repositories {
+    mavenLocal()
+
     maven {
         url = uri(getProp("mavenDependsURL"))
 

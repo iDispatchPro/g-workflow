@@ -10,6 +10,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.*
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningPlugin
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import tasks.*
 import tasks.version.*
 import java.io.File
@@ -29,7 +30,6 @@ const val VERSION_FILE = "version.txt"
 const val envDir = "env"
 const val dependencyDir = ".dependencies"
 
-val deployName = "$GLOBAL_PREFIX-deploy"
 val publishName = "$GLOBAL_PREFIX-publish"
 val buildName = "$GLOBAL_PREFIX-build"
 val checkName = "$GLOBAL_PREFIX-check"
@@ -41,7 +41,6 @@ val cleanName = "$GLOBAL_PREFIX-clean"
 val runName = "$GLOBAL_PREFIX-run"
 val devFinishName = "$GLOBAL_PREFIX-dev-finish"
 
-val checkBranchName = "$GLOBAL_PREFIX-check-branch"
 val toReleaseName = "$GLOBAL_PREFIX-release"
 
 val releaseMajorName = "$GLOBAL_PREFIX-release-major"
@@ -167,12 +166,22 @@ class GWorkFlow : Plugin<Project>
                 project.plugins.apply("application")
 
             val jdk = extension.jdk.orNull ?: "21"
+            val jdkVer = JavaLanguageVersion.of(jdk)
 
-            project.extensions.getByType<JavaToolchainService>().launcherFor {
-                languageVersion.set(JavaLanguageVersion.of(jdk))
-            }
+            project.extensions
+                .getByType<JavaToolchainService>()
+                .launcherFor {
+                    languageVersion.set(jdkVer)
+                }
 
-            java.toolchain.languageVersion.set(JavaLanguageVersion.of(jdk))
+            project.extensions
+                .configure(KotlinJvmProjectExtension::class.java) {
+                    jvmToolchain {
+                        languageVersion.set(jdkVer)
+                    }
+                }
+
+            java.toolchain.languageVersion.set(jdkVer)
 
             project.gradle.startParameter.maxWorkerCount = 8
             project.gradle.startParameter.isParallelProjectExecutionEnabled = true
@@ -205,9 +214,8 @@ class GWorkFlow : Plugin<Project>
                 }
             }
 
-            project.tasks.create<CheckBranchTask>(checkBranchName) {
-                group = taskGroupMore
-            }
+            createTask<CheckBranchTask>(checkBranchName)
+                .group = taskGroupMore
 
             createTask<DAV>(toReleaseName)
             createTask<Major>(releaseMajorName)
@@ -216,9 +224,13 @@ class GWorkFlow : Plugin<Project>
 
             if (isLib())
             {
-                createTask<PublishLib>(deployName)
+                createTask<PublishLib>(publishName)
+                createTask<DeployLib>(deployName)
                 createTask<LibDevFinish>(devFinishName)
                 createTask<LibTests>(testName)
+
+                createTask<DeployDependent>(deployDependent)
+                    .group = taskGroupMore
             }
             else
             {
@@ -260,7 +272,7 @@ val String.patched
         .replace("j-a-r", jarName)
         .replace("v-e-r-s-i-o-n", productVer)
         .replace("a-c-c-o-u-n-t", params.registryUrl.str)
-        .replace("m-a-i-n--i-m-a-g-e", Image(params.registryUrl, projectName, productVer).fullName)
+        .replace("m-a-i-n--i-m-a-g-e", Image(params.registryUrl, projectName, productVer).toString())
 
 fun checkMainBranch() =
     isMainBranch orThrow "The task can only be run in the Main branch"

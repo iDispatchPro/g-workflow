@@ -2,6 +2,7 @@ package tasks.version
 
 import k.common.default
 import k.common.int
+import k.common.or
 import k.common.text
 import org.gradle.api.tasks.Internal
 import versionFile
@@ -21,7 +22,7 @@ open class Major : ReleaseTask()
     {
         checkVersionFormat("Major.Minor.Patch", versionPartsCount)
 
-        val parts = (versionFile.text default "0.0.0")
+        val parts = (versionFile.text or "0.0.0")
             .trim()
             .split('.')
 

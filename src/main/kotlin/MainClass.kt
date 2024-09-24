@@ -14,11 +14,11 @@ val mainFiles : MutableList<Path> by lazy {
 
 fun findMainClass() : String
 {
-    (mainFiles.size > 0) orThrow "The file with the entry point was not found ($mainFileNames)"
+    mainFiles.isNotEmpty() orThrow "The file with the entry point was not found ($mainFileNames)"
     (mainFiles.size == 1) orThrow "The file with the entry point can only be 1. Found: ${mainFiles.map { it.fileName }}"
 
     val mainFile = mainFiles.first()
     val packageStr = File(mainFile.str).readText() extract "package\\s+([\\w.]+)"
 
-    return "${packageStr merge "."}${mainFile.nameWithoutExtension}Kt"
+    return "${packageStr and "."}${mainFile.nameWithoutExtension}Kt"
 }

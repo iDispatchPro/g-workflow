@@ -20,11 +20,11 @@ open class RemoveImages : DefaultTask()
     @TaskAction
     fun action() =
         stage("Remove images", logError = true) {
-            Snapshot().images
+            docker.snapshot.images
                 .filter { instancesLabel in it.labels || it.image.version == "<none>" }
                 .forEach {
                     mute {
-                        Docker.removeImage(it.id)
+                        docker.removeImage(it.id)
                     }
                 }
         }

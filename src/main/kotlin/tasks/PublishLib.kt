@@ -21,6 +21,7 @@ import org.gradle.plugins.signing.SigningExtension
 import params
 import productVer
 import projectName
+import tasks.version.checkBranchName
 import java.io.*
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
@@ -44,6 +45,8 @@ open class PublishLib : DefaultTask()
         project.tasks.getByName(publishStdName).mustRunAfter(devFinishName)
 
         dependsOn(publishStdName, devFinishName)*/
+
+        dependsOn(checkBranchName)
 
         if (isMainBranch)
             dependsOn(devFinishName,

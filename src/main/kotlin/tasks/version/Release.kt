@@ -1,7 +1,6 @@
 package tasks.version
 
 import Git
-import checkBranchName
 import devFinishName
 import k.common.MsgType
 import k.common.className
@@ -26,7 +25,7 @@ abstract class ReleaseTask : DefaultTask()
     {
         description = "Update to next $id version"
 
-        dependsOn(devFinishName, checkBranchName)
+        dependsOn(devFinishName)
     }
 
     private val id

@@ -1,5 +1,5 @@
 import k.common.list
-import k.docker.models.DockerRegistry
+import k.docker.Registry
 import k.serializing.*
 import java.net.URI
 
@@ -25,6 +25,6 @@ data class Parameters(val registryUrl : String,
                       @Optional
                       val signingPassFraze : String)
 {
-    val registry : DockerRegistry
-        get() = DockerRegistry(registryUrl.list.first(), registryLogin, registryPassword)
+    val registry : Registry
+        get() = Registry(registryUrl.list.first(), registryLogin, registryPassword)
 }

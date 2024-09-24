@@ -1,6 +1,5 @@
 package tasks
 
-import GLOBAL_PREFIX
 import devFinishName
 import k.common.*
 import org.gradle.api.DefaultTask
@@ -10,13 +9,11 @@ import projectName
 import publishName
 import tasks.version.checkBranchName
 
-val deployName = "$GLOBAL_PREFIX-deploy"
-
-open class Deploy : DefaultTask()
+open class DeployLib : DefaultTask()
 {
     init
     {
-        description = "The complete application delivery cycle: clean-build-test-images-publish. Only for the final build from the main branch to production."
+        description = "The complete library delivery cycle: clean-build-test-publish. Only for the final build from the main branch to production."
 
         dependsOn(devFinishName, publishName, checkBranchName)
     }

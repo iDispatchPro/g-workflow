@@ -22,23 +22,25 @@ import java.io.File
 const val dockerFile = "dockerfile"
 const val imagesDir = "images"
 
+val docker = Docker()
+
 fun imageTags(name : String, defaultName : String) : List<String>
 {
-    val fixedName = (name - "." - dockerFile) default defaultName
+    val fixedName = (name - "." - dockerFile) or defaultName
 
     return params.registryUrl
         .list
-        .map { Image(it, fixedName, productVer).fullName }
+        .map { Image(it, fixedName, productVer).str }
 }
 
-fun buildImage(name : String, defaultName : String, source : String, label : String? = null)
+fun buildImage(name : String, defaultName : String, source : String, labels : Map<String, String> = mapOf())
 {
     val dockerFile = File(buildDir, name)
 
     prepareFile(File(source), dockerFile)
 
     imageTags(name, defaultName).forEach { tag ->
-        Docker.buildImage(dockerFile, tag, label)
+        docker.buildImage(dockerFile, tag, labels)
 
         msg("""Image "$tag" was built""".n.n, MsgType.OrangeText)
     }
@@ -57,12 +59,8 @@ fun dockerFiles(dir : String) =
             .filter { it.name.endsWith(dockerFile, true) } ensure defaultDockerFile
     }
 
-fun buildImages(dir : String, defaultName : String, label : String? = null) =
+fun buildImages(dir : String, defaultName : String, labels : Map<String, String> = mapOf()) =
     replaceError("Failed to build images") {
-        replaceError("Failed to login [${params.registry}]") {
-            Docker.login(params.registry)
-        }
-
         val sourceDir = File(dir)
 
         if (sourceDir.exists())
@@ -71,7 +69,7 @@ fun buildImages(dir : String, defaultName : String, label : String? = null) =
         defaultDockerFile.writeText(resource(dockerFile).text)
 
         dockerFiles(dir) parallel {
-            buildImage(it.name, defaultName, it.str, label)
+            buildImage(it.name, defaultName, it.str, labels)
         }
     }
 
