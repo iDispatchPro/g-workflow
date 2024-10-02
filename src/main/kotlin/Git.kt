@@ -8,10 +8,10 @@ import java.io.File
 
 object Git
 {
-    fun commit(message : String)
+    fun commit(message : String, dir : File? = null)
     {
-        cmdLine("git add --all")
-        cmdLine("git commit -m '$message'")
+        cmdLine("git add --all", dir)
+        cmdLine("git commit -m '$message'", dir)
     }
 
     val changes
@@ -23,11 +23,11 @@ object Git
     fun getTag() =
         cmdLine("git describe --tags --abbrev=0")
 
-    fun tag(version : String)
+    fun tag(version : String, dir : File? = null)
     {
-        val commitHash = cmdLine("git rev-parse --short HEAD")
+        val commitHash = cmdLine("git rev-parse --short HEAD", dir)
 
-        cmdLine("git tag -a v$version $commitHash -m v$version")
+        cmdLine("git tag -a v$version $commitHash -m v$version", dir)
     }
 
     val branch

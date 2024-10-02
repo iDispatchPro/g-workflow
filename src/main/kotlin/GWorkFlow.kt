@@ -95,7 +95,7 @@ class GWorkFlow : Plugin<Project>
             dateStr = SimpleDateFormat("yy.M.d.HHmm").format(Date())
 
             productVer = if (versionFile.exists())
-                versionFile.readText().trim()
+                versionFile.text.trim()
             else
                 dateStr
 
@@ -230,7 +230,6 @@ class GWorkFlow : Plugin<Project>
                 createTask<LibTests>(testName)
 
                 createTask<DeployDependent>(deployDependent)
-                    .group = taskGroupMore
             }
             else
             {

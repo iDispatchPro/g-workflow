@@ -12,7 +12,7 @@ dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("ru.old-scool-geek:k-lib-common:24.9.22.0906")
+    implementation("ru.old-scool-geek:k-lib-common:24.9.30.0844")
     implementation("ru.old-scool-geek:k-lib-docker:24.9.11.1438")
 
     implementation("org.testng:testng:7.10.2")

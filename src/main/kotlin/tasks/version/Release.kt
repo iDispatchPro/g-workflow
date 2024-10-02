@@ -16,6 +16,7 @@ import k.common.tryProc
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import productVer
 import versionFile
 import java.io.File
 
@@ -36,16 +37,16 @@ abstract class ReleaseTask : DefaultTask()
     {
         versionFile.writeText(getNewVersion().str)
 
-        val newVersion = versionFile.text mustBeSpecified "Version in $versionFile"
+        productVer = versionFile.text mustBeSpecified "Version in $versionFile"
 
         tryProc {
             File(".kotlin").deleteRecursively()
         }
 
-        Git.commit("Update version to $newVersion")
-        Git.tag(newVersion)
+        Git.commit("Update version to $productVer")
+        Git.tag(productVer)
 
-        msg("New $id version $newVersion was created".n, MsgType.OrangeText)
+        msg("New $id version $productVer was created".n, MsgType.OrangeText)
     }
 
     @Internal
