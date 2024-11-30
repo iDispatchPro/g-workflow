@@ -1,8 +1,7 @@
 package tasks
 
-import buildName
 import imagesName
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 
@@ -18,7 +17,7 @@ open class TestsAfterBuild : Test()
         dependsOn(imagesName)
 
         useTestNG {
-            parallel = "methods"
+            parallel = "classes"
             threadCount = 10
             includeGroups = setOf(testGroup)
         }

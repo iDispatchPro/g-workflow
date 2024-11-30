@@ -39,11 +39,12 @@ fun buildImage(name : String, defaultName : String, source : String, labels : Ma
 
     prepareFile(File(source), dockerFile)
 
-    imageTags(name, defaultName).forEach { tag ->
-        docker.buildImage(dockerFile, tag, labels)
+    imageTags(name, defaultName)
+        .forEach { tag ->
+            docker.buildImage(dockerFile, tag, labels)
 
-        msg("""Image "$tag" was built""".n.n, MsgType.OrangeText)
-    }
+            msg("""Image "$tag" was built""".n.n, MsgType.OrangeText)
+        }
 }
 
 fun prepareFile(from : File, to : File)

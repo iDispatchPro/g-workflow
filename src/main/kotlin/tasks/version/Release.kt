@@ -2,20 +2,9 @@ package tasks.version
 
 import Git
 import devFinishName
-import k.common.MsgType
-import k.common.className
-import k.common.low
-import k.common.minus
-import k.common.msg
-import k.common.mustBeSpecified
-import k.common.n
-import k.common.orThrow
-import k.common.str
-import k.common.text
-import k.common.tryProc
+import k.common.*
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import productVer
 import versionFile
 import java.io.File
@@ -49,10 +38,9 @@ abstract class ReleaseTask : DefaultTask()
         msg("New $id version $productVer was created".n, MsgType.OrangeText)
     }
 
-    @Internal
+    @Input
     protected abstract fun getNewVersion() : Any
 
-    @Internal
     fun checkVersionFormat(format : String, partsCount : Int) =
-        ((versionFile.text?.split('.')?.size ?: partsCount) == partsCount) orThrow "Incompatible version format ($format). To change it, delete the file version.txt."
+        ((versionFile.text.split('.').size ?: partsCount) == partsCount) orThrow "Incompatible version format ($format). To change it, delete the file version.txt."
 }

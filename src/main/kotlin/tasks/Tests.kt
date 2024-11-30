@@ -17,7 +17,7 @@ open class Tests : Test()
         dependsOn(buildName)
 
         useTestNG {
-            parallel = "methods"
+            parallel = "classes"
             threadCount = 10
             excludeGroups = setOf(testGroup)
         }

@@ -11,7 +11,7 @@ open class LibTests : Test()
         description = "Running library tests."
 
         useTestNG {
-            parallel = "methods"
+            parallel = "classes"
             threadCount = 10
         }
 

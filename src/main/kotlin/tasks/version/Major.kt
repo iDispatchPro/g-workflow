@@ -1,15 +1,11 @@
 package tasks.version
 
-import k.common.default
-import k.common.int
-import k.common.or
-import k.common.text
-import org.gradle.api.tasks.Internal
+import k.common.*
+import org.gradle.api.tasks.Input
 import versionFile
 
 open class Major : ReleaseTask()
 {
-    @Internal
     override fun getNewVersion() =
         getVersion().also {
             it.major++
@@ -17,7 +13,7 @@ open class Major : ReleaseTask()
             it.build = 0
         }
 
-    @Internal
+    @Input
     fun getVersion() : Version
     {
         checkVersionFormat("Major.Minor.Patch", versionPartsCount)

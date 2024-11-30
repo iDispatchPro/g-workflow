@@ -149,7 +149,7 @@ class GWorkFlow : Plugin<Project>
 
                 project.pluginManager.apply(MavenPublishPlugin::class.java)
                 project.pluginManager.apply(SigningPlugin::class.java)
-                project.pluginManager.apply(DetektPlugin::class.java)
+                //project.pluginManager.apply(DetektPlugin::class.java)
                 project.pluginManager.apply(JavaLibraryPlugin::class.java)
 
                 val javaSources = project.extensions.getByType(SourceSetContainer::class.java)

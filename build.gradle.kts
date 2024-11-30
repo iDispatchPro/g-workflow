@@ -8,12 +8,14 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "2.0.10"
 }
 
+val kLibVer = "24.11.20.1220"
+
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("ru.old-scool-geek:k-lib-common:24.9.30.0844")
-    implementation("ru.old-scool-geek:k-lib-docker:24.9.11.1438")
+    implementation("ru.old-scool-geek:k-lib-common:$kLibVer")
+    implementation("ru.old-scool-geek:k-lib-docker:$kLibVer")
 
     implementation("org.testng:testng:7.10.2")
 
@@ -101,21 +103,21 @@ tasks.register("g-deploy") {
 repositories {
     mavenLocal()
 
-    maven {
+   /* maven {
         url = uri(getProp("mavenDependsURL"))
 
         credentials {
             username = getProp("mavenLogin")
             password = getProp("mavenPassword")
         }
-    }
+    }*/
 
     mavenCentral()
 }
 
 publishing {
     repositories {
-        /*maven {
+       /* maven {
             url = uri(getProp("mavenPluginsURL"))
 
             credentials {
