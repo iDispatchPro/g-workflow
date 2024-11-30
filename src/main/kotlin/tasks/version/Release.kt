@@ -42,5 +42,5 @@ abstract class ReleaseTask : DefaultTask()
     protected abstract fun getNewVersion() : Any
 
     fun checkVersionFormat(format : String, partsCount : Int) =
-        ((versionFile.text.split('.').size ?: partsCount) == partsCount) orThrow "Incompatible version format ($format). To change it, delete the file version.txt."
+        (versionFile.text.split('.').size == partsCount) orThrow "Incompatible version format ($format). To change it, delete the file version.txt."
 }

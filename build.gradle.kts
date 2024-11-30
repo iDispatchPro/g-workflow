@@ -8,14 +8,21 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "2.0.10"
 }
 
-val kLibVer = "24.11.20.1220"
+val http4kVer = "5.32.4.0"
+//val kLibVer = "24.11.20.1220"
 
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
     implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
 
-    implementation("ru.old-scool-geek:k-lib-common:$kLibVer")
-    implementation("ru.old-scool-geek:k-lib-docker:$kLibVer")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.github.jnr:jnr-unixsocket:0.38.22")
+
+    implementation("org.http4k:http4k-core:$http4kVer")
+    implementation("org.http4k:http4k-client-okhttp:$http4kVer")
+
+    //    implementation("ru.old-scool-geek:k-lib-common:$kLibVer")
+    //    implementation("ru.old-scool-geek:k-lib-docker:$kLibVer")
 
     implementation("org.testng:testng:7.10.2")
 
@@ -23,7 +30,14 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
-fun getProp(name : String) : String {
+sourceSets {
+    main {
+        java.setSrcDirs(listOf("../k-lib-common/src", "../k-lib-docker/src"))
+    }
+}
+
+fun getProp(name : String) : String
+{
     val propsFile = file("gradle-local.properties")
     val gradleValue = providers.gradleProperty(name).getOrNull()
     val envName = "${project.name}_$name"
@@ -103,28 +117,28 @@ tasks.register("g-deploy") {
 repositories {
     mavenLocal()
 
-   /* maven {
-        url = uri(getProp("mavenDependsURL"))
+    /* maven {
+         url = uri(getProp("mavenDependsURL"))
 
-        credentials {
-            username = getProp("mavenLogin")
-            password = getProp("mavenPassword")
-        }
-    }*/
+         credentials {
+             username = getProp("mavenLogin")
+             password = getProp("mavenPassword")
+         }
+     }*/
 
     mavenCentral()
 }
 
 publishing {
     repositories {
-       /* maven {
-            url = uri(getProp("mavenPluginsURL"))
+        /* maven {
+             url = uri(getProp("mavenPluginsURL"))
 
-            credentials {
-                username = getProp("mavenLogin")
-                password = getProp("mavenPassword")
-            }
-        }*/
+             credentials {
+                 username = getProp("mavenLogin")
+                 password = getProp("mavenPassword")
+             }
+         }*/
 
         mavenLocal()
     }
