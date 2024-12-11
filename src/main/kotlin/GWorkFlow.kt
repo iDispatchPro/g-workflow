@@ -1,5 +1,4 @@
 import Extension.Companion.toExtension
-import io.gitlab.arturbosch.detekt.DetektPlugin
 import k.common.*
 import k.docker.models.Image
 import k.serializing.deSerialize

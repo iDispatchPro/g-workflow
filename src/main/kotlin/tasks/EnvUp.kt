@@ -45,7 +45,7 @@ fun prepareEnv()
 {
     if (hasEnv)
     {
-        buildImages(envDir, "$projectName-test")
+        buildImages("", envDir, "$projectName-test")
 
         Compose(envDir).start()
     }

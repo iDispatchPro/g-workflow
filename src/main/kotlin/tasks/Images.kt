@@ -7,6 +7,7 @@ import defaultDockerFile
 import fullJarName
 import k.common.*
 import k.docker.Docker
+import k.docker.defaultVersion
 import k.docker.models.Image
 import k.parallels.parallel
 import k.stream.text
@@ -24,22 +25,23 @@ const val imagesDir = "images"
 
 val docker = Docker()
 
-fun imageTags(name : String, defaultName : String) : List<String>
+fun imageTags(path : String, name : String, defaultName : String) : List<String>
 {
-    val fixedName = (name - "." - dockerFile) or defaultName
+    val fixedName = (path and "/") + ((name - "." - dockerFile) or defaultName)
 
-    return params.registryUrl
+    return params
+        .registryUrl
         .list
-        .map { Image(it, fixedName, productVer).str }
+        .flatMap { registry -> listOf(productVer, defaultVersion).map { ver -> Image(registry, fixedName, ver).str } }
 }
 
-fun buildImage(name : String, defaultName : String, source : String, labels : Map<String, String> = mapOf())
+fun buildImage(path : String, name : String, defaultName : String, source : String, labels : Map<String, String> = mapOf())
 {
     val dockerFile = File(buildDir, name)
 
     prepareFile(File(source), dockerFile)
 
-    imageTags(name, defaultName)
+    imageTags(path, name, defaultName)
         .forEach { tag ->
             docker.buildImage(dockerFile, tag, labels)
 
@@ -60,7 +62,7 @@ fun dockerFiles(dir : String) =
             .filter { it.name.endsWith(dockerFile, true) } ensure defaultDockerFile
     }
 
-fun buildImages(dir : String, defaultName : String, labels : Map<String, String> = mapOf()) =
+fun buildImages(path : String, dir : String, defaultName : String, labels : Map<String, String> = mapOf()) =
     replaceError("Failed to build images") {
         val sourceDir = File(dir)
 
@@ -70,7 +72,7 @@ fun buildImages(dir : String, defaultName : String, labels : Map<String, String>
         defaultDockerFile.writeText(resource(dockerFile).text)
 
         dockerFiles(dir) parallel {
-            buildImage(it.name, defaultName, it.str, labels)
+            buildImage(path, it.name, defaultName, it.str, labels)
         }
     }
 
@@ -88,5 +90,5 @@ open class Images : DefaultTask()
 
     @TaskAction
     fun action() =
-        buildImages(imagesDir, projectName)
+        buildImages(params.registryPath, imagesDir, projectName)
 }

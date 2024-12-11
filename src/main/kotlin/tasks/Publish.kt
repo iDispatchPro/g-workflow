@@ -3,6 +3,7 @@ package tasks
 import imagesName
 import k.common.*
 import k.docker.Docker
+import k.docker.models.image
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import params
@@ -23,13 +24,14 @@ open class Publish : DefaultTask()
         replaceError("Failed to publish images") {
             dockerFiles(imagesDir)
                 .forEach {
-                    imageTags(it.name, projectName).forEach { tag ->
-                        replaceError("Failed to push [$tag]") {
-                            docker.push(tag)
-                        }
+                    imageTags(params.registryPath, it.name, projectName)
+                        .forEach { tag ->
+                            replaceError("Failed to push [$tag]") {
+                                docker.push(tag.image, params.registry)
+                            }
 
-                        msg("""Image "$tag" was published""".n.n, MsgType.OrangeText)
-                    }
+                            msg("""Image "$tag" was published""".n.n, MsgType.OrangeText)
+                        }
                 }
         }
     }

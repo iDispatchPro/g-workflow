@@ -7,6 +7,8 @@ data class Parameters(val registryUrl : String,
                       @Optional
                       val registryLogin : String,
                       @Optional
+                      val registryPath : String,
+                      @Optional
                       val registryPassword : String,
                       @Optional
                       val mavenDependsURL : URI,
