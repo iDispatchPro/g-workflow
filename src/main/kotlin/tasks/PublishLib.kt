@@ -1,31 +1,47 @@
 package tasks
 
+import autoAfterEvaluate
 import computeAndSaveFileHash
 import devFinishName
 import extension
 import fromScript
 import isMainBranch
-import k.common.*
+import k.common.MsgType
+import k.common.base64
+import k.common.msg
+import k.common.mustBeFound
+import k.common.mustBeSpecified
+import k.common.n
+import k.common.str
+import k.common.text
 import k.serializing.deSerialize
-import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.gradle.api.DefaultTask
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.internal.publication.MavenPublicationInternal
 import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.get
 import org.gradle.plugins.signing.SigningExtension
 import params
 import productVer
 import projectName
 import tasks.version.checkBranchName
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.zip.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 const val keyServer = "https://keyserver.ubuntu.com/pks"
 
@@ -46,72 +62,72 @@ open class PublishLib : DefaultTask()
 
         dependsOn(publishStdName, devFinishName)*/
 
-        dependsOn(checkBranchName)
+        autoAfterEvaluate {
+            dependsOn(checkBranchName)
 
-        if (isMainBranch)
-            dependsOn(devFinishName,
-                      "javadocJar",
-                      "sourcesJar",
-                      "generatePomFileForMavenPublication",
-                      "generateMetadataFileForMavenPublication")
-        else
-            dependsOn(devFinishName,
-                      "publishToMavenLocal")
+            if (isMainBranch)
+                dependsOn(devFinishName,
+                          "javadocJar",
+                          "sourcesJar",
+                          "generatePomFileForMavenPublication",
+                          "generateMetadataFileForMavenPublication")
+            else
+                dependsOn(devFinishName,
+                          "publishToMavenLocal")
 
-        project
-            .afterEvaluate {
-                groupIdValue = extension.groupId fromScript "group"
+            groupIdValue = extension.groupId fromScript "group"
 
-                project.extensions.getByType(PublishingExtension::class.java)
-                    .apply {
-                        publications {
-                            mavenPublish = create<MavenPublication>("Maven") {
-                                from(project.components["java"])
+            extensions
+                .getByType(PublishingExtension::class.java)
+                .apply {
+                    publications {
+                        mavenPublish = create<MavenPublication>("Maven") {
+                            from(project.components["java"])
 
-                                groupId = groupIdValue
-                                artifactId = projectName
-                                version = productVer
+                            groupId = groupIdValue
+                            artifactId = projectName
+                            version = productVer
 
-                                val projectUrl = extension.projectUrl fromScript "projectUrl"
+                            val projectUrl = extension.projectUrl fromScript "projectUrl"
 
-                                pom.url = projectUrl
-                                pom.description = extension.projectDescription fromScript "projectDescription"
+                            pom.url = projectUrl
+                            pom.description = extension.projectDescription fromScript "projectDescription"
 
-                                pom.scm {
-                                    url = extension.scmUrl.orNull ?: projectUrl
-                                }
+                            pom.scm {
+                                url = extension.scmUrl.orNull ?: projectUrl
+                            }
 
-                                pom.licenses {
-                                    license {
-                                        url = extension.licenseUrl.orNull ?: projectUrl
-                                    }
-                                }
-
-                                pom.developers {
-                                    developer {
-                                        url = extension.developerUrl.orNull ?: projectUrl
-                                    }
-                                }
-                            } as MavenPublicationInternal
-                        }
-
-                        repositories {
-                            if (isMainBranch)
-                            {
-                                maven {
-                                    url = params.mavenPluginsURL
-
-                                    credentials {
-                                        username = params.mavenLogin
-                                        password = params.mavenPassword
-                                    }
+                            pom.licenses {
+                                license {
+                                    url = extension.licenseUrl.orNull ?: projectUrl
                                 }
                             }
-                            else
-                                mavenLocal()
-                        }
+
+                            pom.developers {
+                                developer {
+                                    url = extension.developerUrl.orNull ?: projectUrl
+                                }
+                            }
+                        } as MavenPublicationInternal
                     }
-            }
+
+                    repositories {
+                        if (isMainBranch)
+                        {
+                            maven {
+                                url = params.mavenPluginsURL
+
+                                credentials {
+                                    username = params.mavenLogin
+                                    password = params.mavenPassword
+                                }
+                            }
+                        }
+                        else
+                            mavenLocal()
+                    }
+                }
+        }
     }
 
     @TaskAction

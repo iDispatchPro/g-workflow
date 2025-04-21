@@ -5,11 +5,19 @@ plugins {
     `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.2.1"
     `maven-publish`
-    id("org.jetbrains.kotlin.jvm") version "2.0.21"
+    id("org.jetbrains.kotlin.jvm") version "2.1.20"
 }
 
+val projectGroup = "ru.old-school-geek"
+
 val http4kVer = "5.32.4.0"
-//val kLibVer = "24.11.20.1220"
+val projectName = project.name
+val projectId = projectName.lowercase()
+
+val orangeColor = "\u001B[33m"
+val resetColor = "\u001B[0m"
+
+group = projectGroup
 
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
@@ -21,26 +29,29 @@ dependencies {
     implementation("org.http4k:http4k-core:$http4kVer")
     implementation("org.http4k:http4k-client-okhttp:$http4kVer")
 
-    //    implementation("ru.old-scool-geek:k-lib-common:$kLibVer")
-    //    implementation("ru.old-scool-geek:k-lib-docker:$kLibVer")
-
     implementation("org.testng:testng:7.10.2")
 
     implementation("com.squareup.okio:okio:3.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.1.0.202411261347-r")
 }
 
 sourceSets {
     main {
-        java.setSrcDirs(listOf("../k-lib-common/src", "../k-lib-docker/src"))
+        java.setSrcDirs(listOf("../k-lib-common/src", "../k-lib-docker/src", "../k-lib-git/src"))
     }
 }
+/*
+kotlin {
+    jvmToolchain(21)
+}*/
 
 fun getProp(name : String) : String
 {
     val propsFile = file("gradle-local.properties")
     val gradleValue = providers.gradleProperty(name).getOrNull()
-    val envName = "${project.name}_$name"
+    val envName = "${projectName}_$name"
 
     val value = System.getenv(envName)
         ?: if (propsFile.exists())
@@ -61,24 +72,6 @@ afterEvaluate {
     (tasks["sourcesJar"] as Jar).duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-val orangeColor = "\u001B[33m"
-val blueColor = "\u001B[34m"
-val resetColor = "\u001B[0m"
-
-group = "ru.old-school-geek"
-
-/*val javaVersion = "21"
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = javaVersion
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(javaVersion))
-    }
-}*/
-
 java {
     withJavadocJar()
     withSourcesJar()
@@ -86,9 +79,9 @@ java {
 
 gradlePlugin {
     plugins {
-        create("$group") {
-            displayName = project.name
-            id = "$group.${project.name.lowercase()}"
+        create(projectGroup) {
+            displayName = projectName
+            id = "$projectGroup.$projectId"
             implementationClass = "GWorkFlow"
             description = "Creates a standard build workflow for services."
             tags.set(listOf("build", "services", "publish"))
@@ -96,23 +89,25 @@ gradlePlugin {
     }
 }
 
-tasks.jar {
-    manifest {
-        attributes["Implementation-Version"] = version
+tasks
+    .jar {
+        manifest {
+            attributes["Implementation-Version"] = version
+        }
     }
-}
 
-tasks.register("g-deploy") {
-    group = "[${project.name.lowercase()}]"
-    version = SimpleDateFormat("yy.M.d.HHmm").format(Date())
+tasks
+    .register("g-deploy") {
+        group = "[$projectId]"
+        version = SimpleDateFormat("yy.M.d.HHmm").format(Date())
 
-    dependsOn("publish")
+        dependsOn("publish")
 
-    doLast {
-        println("Please use this line for importing plugin:")
-        println("""${orangeColor}id("${project.group}.${project.name.lowercase()}") version "$version"$resetColor""")
+        doLast {
+            println("Please use this line for importing plugin:")
+            println("""${orangeColor}id("$projectGroup.$projectId") version "$version"$resetColor""")
+        }
     }
-}
 
 repositories {
     mavenLocal()

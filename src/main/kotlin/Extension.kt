@@ -3,6 +3,7 @@ import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.jetbrains.kotlin.tooling.core.Interner
 
 const val extensionName = "gWorkFlow"
 
@@ -14,10 +15,10 @@ open class Extension(objectFactory : ObjectFactory)
     val scmUrl : Property<String> = objectFactory.property(String::class.java)
     val licenseUrl : Property<String> = objectFactory.property(String::class.java)
     val developerUrl : Property<String> = objectFactory.property(String::class.java)
-    val codeCheckFile : Property<String> = objectFactory.property(String::class.java)
     val dependedLibs : ListProperty<String> = objectFactory.listProperty(String::class.java)
 
-    val jdk : Property<String> = objectFactory.property(String::class.java)
+    val jdkName : Property<String> = objectFactory.property(String::class.java)
+    val jdkVersion : Property<Int> = objectFactory.property(Int::class.java)
     val skipImageCheck : Property<Boolean> = objectFactory.property(Boolean::class.java)
 
     companion object

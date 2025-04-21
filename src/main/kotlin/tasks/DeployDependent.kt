@@ -1,12 +1,24 @@
 package tasks
 
 import GLOBAL_PREFIX
+import Git
 import VERSION_FILE
 import extension
-import k.common.*
+import k.common.MsgType
+import k.common.Process
+import k.common.appConfig
+import k.common.isWindows
+import k.common.maskRegExp
+import k.common.min
+import k.common.msg
+import k.common.mustBeFound
+import k.common.mustBeSpecified
+import k.common.n
+import k.common.text
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import productVer
+import projectDir
 import projectName
 import toReleaseName
 import versionFile
@@ -34,14 +46,15 @@ open class DeployDependent : Jar()
 
         tasks
             .forEach { task ->
-                Process("$gradle $task", dir, mapOf("JAVA_HOME" to System.getProperty("java.home"))).wait(10.min, false)
+                Process("$gradle $task", dir, mapOf("JAVA_HOME" to System.getProperty("java.home")))
+                    .wait(10.min, false)
             }
     }
 
     @TaskAction
     fun action()
     {
-        executeTasks(project.projectDir, toReleaseName, deployName)
+        executeTasks(projectDir, toReleaseName, deployName)
 
         productVer = versionFile.text.trim()
 
@@ -55,19 +68,20 @@ open class DeployDependent : Jar()
             .forEach { lib ->
                 msg("\nUpdate $lib... ", MsgType.BlueText)
 
-                val libDir = File(project.projectDir.parent, lib).mustBeFound
+                val libDir = File(projectDir.parent, lib).mustBeFound
 
                 File(libDir, VERSION_FILE).writeText(productVer)
 
                 val gradleFile = File(libDir, gradleFile).mustBeFound
-                var gradleText = gradleFile.text
+                var gradleText = gradleFile
+                    .text
+                    .replace("id[( ]+\"ru.old-school-geek.g-workflow\"[) ]+version\\w+\"[\\d.]+\"",
+                             "id(\"ru.old-school-geek.g-workflow\") version \"${appConfig["ImplementationVersion"]}\"")
 
                 implements
                     .forEach { rule -> gradleText = gradleText.replace(rule.first, rule.second) }
 
                 gradleFile.writeText(gradleText)
-
-                System.getProperty("java.home")
 
                 executeTasks(libDir, deployName)
 
@@ -78,7 +92,7 @@ open class DeployDependent : Jar()
 
         libs
             .forEach { lib ->
-                val libDir = File(project.projectDir.parent, lib).mustBeFound
+                val libDir = File(projectDir.parent, lib).mustBeFound
 
                 Git.commit("Update depends with version $productVer", libDir)
                 Git.tag(productVer, libDir)

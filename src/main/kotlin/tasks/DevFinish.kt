@@ -1,5 +1,6 @@
 package tasks
 
+import autoAfterEvaluate
 import buildName
 import checkName
 import cleanName
@@ -14,25 +15,25 @@ open class DevFinish : DefaultTask()
     {
         description = "The full development cycle of an application: cleaning, building, testing, images."
 
-        project.afterEvaluate {
-            if (project.tasks.count { it.name == resourcesName } > 0)
+        autoAfterEvaluate {
+            if (tasks.names.contains(resourcesName))
             {
-                project.tasks.getByName("processResources").mustRunAfter(resourcesName)
+                tasks.getByName("processResources").mustRunAfter(resourcesName)
 
-                project.tasks.getByName(buildName).mustRunAfter(resourcesName)
+                tasks.getByName(buildName).mustRunAfter(resourcesName)
 
                 dependsOn(resourcesName, checkName)
 
-                project.tasks.getByName(resourcesName).dependsOn(cleanName)
+                tasks.getByName(resourcesName).dependsOn(cleanName)
             }
+
+            dependsOn(cleanName,
+                      unitTestsName,
+                      integrationTestsName,
+                      imagesName)
+
+            project.tasks.getByName("compileKotlin").mustRunAfter(cleanName)
+            project.tasks.getByName("compileJava").mustRunAfter(cleanName)
         }
-
-        dependsOn(cleanName,
-                  testName,
-                  testsAfterBuildName,
-                  imagesName)
-
-        project.tasks.getByName("compileKotlin").mustRunAfter(cleanName)
-        project.tasks.getByName("compileJava").mustRunAfter(cleanName)
     }
 }

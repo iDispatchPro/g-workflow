@@ -1,6 +1,7 @@
 package tasks.version
 
 import Git
+import autoAfterEvaluate
 import devFinishName
 import k.common.*
 import org.gradle.api.DefaultTask
@@ -15,7 +16,9 @@ abstract class ReleaseTask : DefaultTask()
     {
         description = "Update to next $id version"
 
-        dependsOn(devFinishName)
+        autoAfterEvaluate {
+            dependsOn(devFinishName)
+        }
     }
 
     private val id

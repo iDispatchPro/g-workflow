@@ -2,11 +2,11 @@ package tasks
 
 import GLOBAL_PREFIX
 import buildName
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 
-val testName = "$GLOBAL_PREFIX-test"
+const val unitTestsName = "$GLOBAL_PREFIX-test-unit"
 
 open class Tests : Test()
 {
@@ -34,6 +34,7 @@ open class Tests : Test()
         classpath = testClassesDirs
     }
 
+    @Suppress("UnstableApiUsage")
     override fun getDryRun() =
         project.objects
             .property(Boolean::class.java)

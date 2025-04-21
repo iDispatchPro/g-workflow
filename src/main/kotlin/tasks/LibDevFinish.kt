@@ -10,7 +10,7 @@ open class LibDevFinish : DefaultTask()
     {
         description = "The full development cycle of an application: cleaning, building, testing."
 
-        dependsOn(cleanName, testName, checkName, "jar")
+        dependsOn(cleanName, unitTestsName, checkName, "jar")
 
         project.tasks.getByName("compileKotlin").mustRunAfter(cleanName)
         project.tasks.getByName("compileJava").mustRunAfter(cleanName)

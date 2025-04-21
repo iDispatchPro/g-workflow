@@ -1,14 +1,15 @@
 package tasks
 
+import GLOBAL_PREFIX
 import imagesName
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 
-const val testGroup = "AfterBuild"
-val testsAfterBuildName = "$testName-after-build"
+const val testGroup = "integration"
+const val integrationTestsName = "$GLOBAL_PREFIX-test-$testGroup"
 
-open class TestsAfterBuild : Test()
+open class IntegrationsTests : Test()
 {
     init
     {

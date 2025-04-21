@@ -8,6 +8,7 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import productVer
+import projectName
 import java.io.File
 
 open class Build : Jar()
@@ -27,7 +28,7 @@ open class Build : Jar()
 
         manifest {
             attributes(hashMapOf("Main-Class" to findMainClass(),
-                                 "Implementation-Title" to project.name,
+                                 "Implementation-Title" to projectName,
                                  "Implementation-Version" to productVer,
                                  "G-Workflow-Version" to appConfig["ImplementationVersion"]))
         }

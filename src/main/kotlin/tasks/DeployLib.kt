@@ -1,5 +1,6 @@
 package tasks
 
+import autoAfterEvaluate
 import devFinishName
 import k.common.*
 import org.gradle.api.DefaultTask
@@ -15,7 +16,9 @@ open class DeployLib : DefaultTask()
     {
         description = "The complete library delivery cycle: clean-build-test-publish. Only for the final build from the main branch to production."
 
-        dependsOn(devFinishName, publishName, checkBranchName)
+        autoAfterEvaluate {
+            dependsOn(devFinishName, publishName, checkBranchName)
+        }
     }
 
     @TaskAction

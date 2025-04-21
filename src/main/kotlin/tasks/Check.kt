@@ -6,7 +6,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-const val DETEKT_CONFIG = "detekt.yaml"
+private const val DETEKT_CONFIG = "detekt.yaml"
 
 open class Check : DefaultTask()
 {
@@ -16,13 +16,16 @@ open class Check : DefaultTask()
 
         if (File(DETEKT_CONFIG).exists())
         {
-            project.extensions.getByType(DetektExtension::class.java).apply {
-                allRules = true
-                parallel = true
-                buildUponDefaultConfig = true
+            project
+                .extensions
+                .getByType(DetektExtension::class.java)
+                .apply {
+                    allRules = true
+                    parallel = true
+                    buildUponDefaultConfig = true
 
-                config.setFrom(DETEKT_CONFIG)
-            }
+                    config.setFrom(DETEKT_CONFIG)
+                }
 
             dependsOn(project.tasks.withType(Detekt::class.java))
         }

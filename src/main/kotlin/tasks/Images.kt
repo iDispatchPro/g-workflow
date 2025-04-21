@@ -84,7 +84,7 @@ open class Images : DefaultTask()
 
         inputs.files(fullJarName)
 
-        mustRunAfter(testName, checkName)
+        mustRunAfter(unitTestsName, checkName)
         dependsOn(buildName)
     }
 

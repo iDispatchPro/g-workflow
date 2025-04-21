@@ -3,7 +3,8 @@ import k.docker.Registry
 import k.serializing.*
 import java.net.URI
 
-data class Parameters(val registryUrl : String,
+data class Parameters(@Optional
+                      val registryUrl : String,
                       @Optional
                       val registryLogin : String,
                       @Optional
