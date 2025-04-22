@@ -1,6 +1,8 @@
 package tasks.version
 
-import k.common.*
+import k.common.int
+import k.common.or
+import k.common.text
 import org.gradle.api.tasks.Input
 import versionFile
 
@@ -16,7 +18,8 @@ open class Major : ReleaseTask()
     @Input
     fun getVersion() : Version
     {
-        checkVersionFormat("Major.Minor.Patch", versionPartsCount)
+        if (versionFile.text.isNotBlank())
+            checkVersionFormat("Major.Minor.Patch", versionPartsCount)
 
         val parts = (versionFile.text or "0.0.0")
             .trim()

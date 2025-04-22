@@ -45,7 +45,7 @@ fun buildImage(path : String, name : String, defaultName : String, source : Stri
         .forEach { tag ->
             docker.buildImage(dockerFile, tag, labels)
 
-            msg("""Image "$tag" was built""".n.n, MsgType.OrangeText)
+            msg("""Image "$tag" was built""".n, MsgType.Ok)
         }
 }
 

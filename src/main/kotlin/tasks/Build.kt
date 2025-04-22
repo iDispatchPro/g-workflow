@@ -37,6 +37,6 @@ open class Build : Jar()
     @TaskAction
     fun action()
     {
-        msg("\n$jarName was built\n\n", MsgType.OrangeText)
+        msg("\n$jarName was built\n", MsgType.Ok)
     }
 }

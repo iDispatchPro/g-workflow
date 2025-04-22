@@ -5,7 +5,7 @@ plugins {
     `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.2.1"
     `maven-publish`
-    id("org.jetbrains.kotlin.jvm") version "2.1.20"
+    id("org.jetbrains.kotlin.jvm") version "2.0.21"
 }
 
 val projectGroup = "ru.old-school-geek"

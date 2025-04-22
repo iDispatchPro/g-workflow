@@ -4,7 +4,9 @@ import dateStr
 import k.common.choose
 import k.common.int
 import k.common.str
+import k.common.text
 import productVer
+import versionFile
 import java.nio.file.Path
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
@@ -15,7 +17,8 @@ open class DAV : ReleaseTask()
 {
     override fun getNewVersion() : Any
     {
-        checkVersionFormat("Date As Version", davPartsCount)
+        if (versionFile.text.isNotBlank())
+            checkVersionFormat("Date As Version", davPartsCount)
 
         val attempt = Path.of(dateStr).extension.int + (productVer == dateStr).choose(1, 0)
 
