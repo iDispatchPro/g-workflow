@@ -1,6 +1,9 @@
 package tasks.version
 
-open class Minor : Major()
+import TaskContext
+import javax.inject.Inject
+
+open class Minor @Inject constructor(context: TaskContext) : Major(context)
 {
     override fun getNewVersion() =
         getVersion().also {

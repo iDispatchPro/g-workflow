@@ -1,14 +1,18 @@
 package tasks
 
+import TaskContext
 import imagesName
-import k.common.*
+import k.common.MsgType
+import k.common.msg
+import k.common.n
+import k.common.replaceError
 import k.docker.models.image
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import params
-import projectName
+import javax.inject.Inject
 
-open class Publish : DefaultTask()
+open class Publish @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {
@@ -21,15 +25,15 @@ open class Publish : DefaultTask()
     fun action()
     {
         replaceError("Failed to publish images") {
-            dockerFiles(imagesDir)
+            dockerFiles(context, imagesDir)
                 .forEach {
-                    imageTags(params.registryPath, it.name, projectName)
+                    imageTags(context, params.registryPath, it.name, context.projectName)
                         .forEach { tag ->
                             replaceError("Failed to push [$tag]") {
                                 docker.push(tag.image, params.registry)
                             }
 
-                            msg("""Image "$tag" was published""".n.n, MsgType.OrangeText)
+                            msg("""Image "$tag" was published""".n.n, MsgType.Ok)
                         }
                 }
         }

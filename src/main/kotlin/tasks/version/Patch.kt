@@ -1,6 +1,9 @@
 package tasks.version
 
-open class Patch : Major()
+import TaskContext
+import javax.inject.Inject
+
+open class Patch @Inject constructor(context: TaskContext) : Major(context)
 {
     override fun getNewVersion() =
         getVersion().also {

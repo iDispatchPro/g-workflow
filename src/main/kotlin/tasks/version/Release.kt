@@ -1,16 +1,15 @@
 package tasks.version
 
-import Git
+import TaskContext
 import autoAfterEvaluate
 import devFinishName
 import k.common.*
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.*
-import productVer
-import versionFile
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-abstract class ReleaseTask : DefaultTask()
+abstract class ReleaseTask(protected val context: TaskContext) : DefaultTask()
 {
     init
     {
@@ -27,24 +26,24 @@ abstract class ReleaseTask : DefaultTask()
     @TaskAction
     fun action()
     {
-        versionFile.writeText(getNewVersion().str)
-
-        productVer = versionFile.text mustBeSpecified "Version in $versionFile"
+        context.versionFile.writeText(getNewVersion().str)
 
         tryProc {
             File(".kotlin").deleteRecursively()
         }
 
-        if (Git.branch.is)
-        Git.commit("Update version to $productVer")
-        Git.tag(productVer)
+        if (context.repo.exists) {
+            context.repo.commit("Update version to ${context.productVersion}")
+            context.repo.tag(context.productVersion)
+        }
 
-        msg("New $id version $productVer was created".n, MsgType.OrangeText)
+        msg("New $id version ${context.productVersion} was created".n, MsgType.Ok)
     }
 
     @Input
     protected abstract fun getNewVersion() : Any
 
     fun checkVersionFormat(format : String, partsCount : Int) =
-        (versionFile.text.split('.').size == partsCount) orThrow "Incompatible version format ($format). To change it, delete or modify the file version.txt."
+        (context.versionFile.text.split('.').size == partsCount)
+            .orThrow("Incompatible version format ($format). To change it, delete or modify the file version.txt.")
 }

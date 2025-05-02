@@ -1,15 +1,17 @@
 package tasks
 
 import GLOBAL_PREFIX
+import TaskContext
 import imagesName
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
+import javax.inject.Inject
 
 const val testGroup = "integration"
 const val integrationTestsName = "$GLOBAL_PREFIX-test-$testGroup"
 
-open class IntegrationsTests : Test()
+open class IntegrationsTests @Inject constructor(private val context: TaskContext) : Test()
 {
     init
     {

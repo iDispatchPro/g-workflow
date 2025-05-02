@@ -1,20 +1,11 @@
 package tasks
 
-import buildDir
-import envDir
-import imagesName
-import k.common.*
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.TaskAction
-import projectDir
-import projectName
-import java.io.File
-
-class Compose(val dir : String)
+/*
+class Compose(val context: TaskContext, val dir: String)
 {
     private val filePath = "$dir/compose.yaml"
-    private val sourceFile = File("$projectDir/$filePath")
-    private val composeFile = File("$buildDir/$filePath")
+    private val sourceFile = File("${context.projectDir}/$filePath")
+    private val composeFile = File(context.buildDir, filePath)
 
     private fun doAction(cmd : String)
     {
@@ -23,9 +14,9 @@ class Compose(val dir : String)
             composeFile.parentFile.mkdirs()
             sourceFile.parentFile.copyRecursively(composeFile.parentFile, true)
 
-            prepareFile(sourceFile, composeFile)
+            context.prepareFile(sourceFile, composeFile)
 
-            val groupName = "$projectName-$dir".low
+            val groupName = "${context.projectName}-$dir".low
 
             cmdLine("""docker compose --project-name $groupName -f ${composeFile.name} $cmd""", composeFile.parentFile)
         }
@@ -63,4 +54,4 @@ open class PrepareEnv : DefaultTask()
     @TaskAction
     fun action() =
         prepareEnv()
-}
+}*/

@@ -1,12 +1,13 @@
 package tasks.version
 
+import TaskContext
 import k.common.int
 import k.common.or
 import k.common.text
 import org.gradle.api.tasks.Input
-import versionFile
+import javax.inject.Inject
 
-open class Major : ReleaseTask()
+open class Major @Inject constructor(context: TaskContext) : ReleaseTask(context)
 {
     override fun getNewVersion() =
         getVersion().also {
@@ -18,10 +19,10 @@ open class Major : ReleaseTask()
     @Input
     fun getVersion() : Version
     {
-        if (versionFile.text.isNotBlank())
+        if (context.versionFile.text.isNotBlank())
             checkVersionFormat("Major.Minor.Patch", versionPartsCount)
 
-        val parts = (versionFile.text or "0.0.0")
+        val parts = (context.versionFile.text or "0.0.0")
             .trim()
             .split('.')
 

@@ -1,15 +1,17 @@
 package tasks
 
+import TaskContext
 import autoAfterEvaluate
 import buildName
 import checkName
 import cleanName
 import imagesName
 import org.gradle.api.DefaultTask
+import javax.inject.Inject
 
 const val resourcesName = "buildResources"
 
-open class DevFinish : DefaultTask()
+open class DevFinish @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {

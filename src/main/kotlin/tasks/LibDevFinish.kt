@@ -1,10 +1,12 @@
 package tasks
 
+import TaskContext
 import checkName
 import cleanName
 import org.gradle.api.DefaultTask
+import javax.inject.Inject
 
-open class LibDevFinish : DefaultTask()
+open class LibDevFinish @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {

@@ -1,10 +1,12 @@
 package tasks
 
+import TaskContext
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
+import javax.inject.Inject
 
-open class LibTests : Test()
+open class LibTests @Inject constructor(private val context: TaskContext) : Test()
 {
     init
     {

@@ -1,27 +1,26 @@
 package tasks.version
 
-import dateStr
+import TaskContext
 import k.common.choose
 import k.common.int
 import k.common.str
 import k.common.text
-import productVer
-import versionFile
 import java.nio.file.Path
+import javax.inject.Inject
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
 
 const val davPartsCount = 4
 
-open class DAV : ReleaseTask()
+open class DAV @Inject constructor(context: TaskContext) : ReleaseTask(context)
 {
     override fun getNewVersion() : Any
     {
-        if (versionFile.text.isNotBlank())
+        if (context.versionFile.text.isNotBlank())
             checkVersionFormat("Date As Version", davPartsCount)
 
-        val attempt = Path.of(dateStr).extension.int + (productVer == dateStr).choose(1, 0)
+        val attempt = Path.of(context.dateStr).extension.int + (context.productVersion == context.dateStr).choose(1, 0)
 
-        return "${Path.of(dateStr).nameWithoutExtension}.${attempt.str.padStart(4, '0')}"
+        return "${Path.of(context.dateStr).nameWithoutExtension}.${attempt.str.padStart(4, '0')}"
     }
 }

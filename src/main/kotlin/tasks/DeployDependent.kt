@@ -1,41 +1,28 @@
 package tasks
 
 import GLOBAL_PREFIX
-import Git
+import TaskContext
 import VERSION_FILE
-import extension
-import k.common.MsgType
-import k.common.Process
-import k.common.appConfig
-import k.common.isWindows
-import k.common.maskRegExp
-import k.common.min
-import k.common.msg
-import k.common.mustBeFound
-import k.common.mustBeSpecified
-import k.common.n
-import k.common.text
+import k.common.*
+import k.git.GitRepo
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
-import productVer
-import projectDir
-import projectName
 import toReleaseName
-import versionFile
 import java.io.File
+import javax.inject.Inject
 
 const val deployDependent = "$GLOBAL_PREFIX-deploy-dependent-libs"
 const val gradleFile = "build.gradle.kts"
 
-open class DeployDependent : Jar()
+open class DeployDependent @Inject constructor(private val context: TaskContext) : Jar()
 {
     init
     {
         description = "Update dependencies and deploy dependent libraries"
     }
 
-    private fun rule(name : String, group : String = extension.groupId.get()) =
-        "implementation\\(\\s*?\"${"$group:$name:".maskRegExp}.*?\"\\s*?\\)".toRegex() to "implementation(\"$group:$name:$productVer\")"
+    private fun rule(name : String, group : String = context.extension.groupId.get()) =
+        "implementation\\(\\s*?\"${"$group:$name:".maskRegExp}.*?\"\\s*?\\)".toRegex() to "implementation(\"$group:$name:${context.productVersion}\")"
 
     private fun executeTasks(dir : File, vararg tasks : String)
     {
@@ -54,13 +41,11 @@ open class DeployDependent : Jar()
     @TaskAction
     fun action()
     {
-        executeTasks(projectDir, toReleaseName, deployName)
+        executeTasks(context.projectDir, toReleaseName, deployName)
 
-        productVer = versionFile.text.trim()
+        val libs = context.extension.dependedLibs.get()
 
-        val libs = extension.dependedLibs.get()
-
-        val implements = (listOf(projectName) + libs).map { lib -> rule(lib) }
+        val implements = (listOf(context.projectName) + libs).map { lib -> rule(lib) }
 
         libs.isNotEmpty() mustBeSpecified "dependedLibs"
 
@@ -68,9 +53,9 @@ open class DeployDependent : Jar()
             .forEach { lib ->
                 msg("\nUpdate $lib... ", MsgType.BlueText)
 
-                val libDir = File(projectDir.parent, lib).mustBeFound
+                val libDir = File(context.projectDir.parent, lib).mustBeFound
 
-                File(libDir, VERSION_FILE).writeText(productVer)
+                File(libDir, VERSION_FILE).writeText(context.productVersion)
 
                 val gradleFile = File(libDir, gradleFile).mustBeFound
                 var gradleText = gradleFile
@@ -92,10 +77,12 @@ open class DeployDependent : Jar()
 
         libs
             .forEach { lib ->
-                val libDir = File(projectDir.parent, lib).mustBeFound
+                val libDir = File(context.projectDir.parent, lib).mustBeFound
 
-                Git.commit("Update depends with version $productVer", libDir)
-                Git.tag(productVer, libDir)
+                val repo = GitRepo(libDir)
+
+                repo.commit("Update depends with version ${context.productVersion}")
+                repo.tag(context.productVersion)
             }
 
         msg("Done", MsgType.Ok)

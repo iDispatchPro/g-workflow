@@ -1,11 +1,6 @@
 package tasks
 
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.TaskAction
-import projectDir
-import java.io.File
-
-fun removeEnv()
+/*fun removeEnv()
 {
     if (File(projectDir, "env").exists())
         Compose("env").stop()
@@ -23,4 +18,4 @@ open class ShutdownEnv : DefaultTask()
     @TaskAction
     fun action() =
         removeEnv()
-}
+}*/

@@ -1,10 +1,8 @@
 package tasks
 
-import buildDir
+import TaskContext
 import buildName
 import checkName
-import defaultDockerFile
-import fullJarName
 import k.common.*
 import k.docker.Docker
 import k.docker.defaultVersion
@@ -14,34 +12,34 @@ import k.stream.text
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import params
-import patched
-import productVer
-import projectDir
-import projectName
 import java.io.File
+import javax.inject.Inject
 
 const val dockerFile = "dockerfile"
 const val imagesDir = "images"
 
 val docker = Docker()
 
-fun imageTags(path : String, name : String, defaultName : String) : List<String>
+fun imageTags(context: TaskContext, path: String, name: String, defaultName: String): List<String>
 {
     val fixedName = (path and "/") + ((name - "." - dockerFile) or defaultName)
 
     return params
         .registryUrl
         .list
-        .flatMap { registry -> listOf(productVer, defaultVersion).map { ver -> Image(registry, fixedName, ver).str } }
+        .flatMap { registry ->
+            listOf(context.productVersion, defaultVersion)
+                .map { ver -> Image(registry, fixedName, ver).str }
+        }
 }
 
-fun buildImage(path : String, name : String, defaultName : String, source : String, labels : Map<String, String> = mapOf())
+fun buildImage(context: TaskContext, path : String, name : String, defaultName : String, source : String, labels : Map<String, String> = mapOf())
 {
-    val dockerFile = File(buildDir, name)
+    val dockerFile = File(context.buildDir, name)
 
-    prepareFile(File(source), dockerFile)
+    context.prepareFile(File(source), dockerFile)
 
-    imageTags(path, name, defaultName)
+    imageTags(context, path, name, defaultName)
         .forEach { tag ->
             docker.buildImage(dockerFile, tag, labels)
 
@@ -49,40 +47,42 @@ fun buildImage(path : String, name : String, defaultName : String, source : Stri
         }
 }
 
-fun prepareFile(from : File, to : File)
-{
-    to.parentFile.mkdirs()
-    to.writeText(from.readText().patched)
-}
+private val TaskContext.defaultDockerFile
+    get() = File(buildDir, dockerFile)
 
-fun dockerFiles(dir : String) =
-    File(projectDir, dir).let { root ->
+fun dockerFiles(context: TaskContext, dir: String) =
+    File(context.projectDir, dir).let { root ->
         root
             .files
-            .filter { it.name.endsWith(dockerFile, true) } ensure defaultDockerFile
+            .filter { it.name.endsWith(dockerFile, true) } ensure context.defaultDockerFile
     }
 
-fun buildImages(path : String, dir : String, defaultName : String, labels : Map<String, String> = mapOf()) =
-    replaceError("Failed to build images") {
+fun buildImages(
+    context: TaskContext,
+    path: String,
+    dir: String,
+    defaultName: String,
+    labels: Map<String, String> = mapOf()
+) = replaceError("Failed to build images") {
         val sourceDir = File(dir)
 
         if (sourceDir.exists())
-            sourceDir.copyRecursively(File(buildDir), true)
+            sourceDir.copyRecursively(context.buildDir, true)
 
-        defaultDockerFile.writeText(resource(dockerFile).text)
+        context.defaultDockerFile.writeText(resource(dockerFile).text)
 
-        dockerFiles(dir) parallel {
-            buildImage(path, it.name, defaultName, it.str, labels)
+        dockerFiles(context, dir) parallel {
+            buildImage(context, path, it.name, defaultName, it.str, labels)
         }
     }
 
-open class Images : DefaultTask()
+open class Images @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {
         description = "Building images for Docker files from the 'images' directory or for automatically generated ones."
 
-        inputs.files(fullJarName)
+        inputs.files(context.fullJarName)
 
         mustRunAfter(unitTestsName, checkName)
         dependsOn(buildName)
@@ -90,5 +90,5 @@ open class Images : DefaultTask()
 
     @TaskAction
     fun action() =
-        buildImages(params.registryPath, imagesDir, projectName)
+        buildImages(context, params.registryPath, imagesDir, context.projectName)
 }

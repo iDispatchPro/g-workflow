@@ -1,7 +1,5 @@
-import Extension.Companion.toExtension
 import io.gitlab.arturbosch.detekt.DetektPlugin
 import k.common.*
-import k.docker.models.Image
 import k.serializing.deSerialize
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -12,7 +10,6 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.repositories
 import org.gradle.plugins.signing.SigningPlugin
@@ -20,14 +17,14 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import tasks.*
-import tasks.version.*
+import tasks.version.DAV
+import tasks.version.Major
+import tasks.version.Minor
+import tasks.version.Patch
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.math.min
 
-const val maxJdkVer = 24
-const val gradleVersion = "8.14-rc-2"
+const val maxJdkVer = 22
+const val gradleVersion = "8.14"
 
 const val pluginName = "G-Workflow"
 val instancesLabel = pluginName.low
@@ -52,7 +49,6 @@ const val removeImages = "$GLOBAL_PREFIX-remove-images"
 const val cleanName = "$GLOBAL_PREFIX-clean"
 const val runName = "$GLOBAL_PREFIX-run"
 const val devFinishName = "$GLOBAL_PREFIX-dev-finish"
-const val maxJdkForKotlinCompiler = 22
 
 const val toReleaseName = "$GLOBAL_PREFIX-release"
 
@@ -62,98 +58,62 @@ const val releasePatchName = "$GLOBAL_PREFIX-release-patch"
 
 const val reportColWidth = 66
 
-lateinit var jarName : String
-lateinit var fullJarName : String
-lateinit var productVer : String
-lateinit var projectName : String
-lateinit var buildDir : String
-lateinit var projectDir : File
-lateinit var versionFile : File
-lateinit var dateStr : String
-lateinit var extension : Extension
-
-var isMainBranch : Boolean = false
-
-val params : Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
+val params: Parameters = (env("${System.getenv(GRADLE_HOME_VAR)}/$gradlePropsFile")
         + env(gradlePropsFile)
         + env(localPropsFile)
         + env(myPropsFile)).deSerialize<Parameters>()
 
-val defaultDockerFile
-    get() = File(buildDir, dockerFile)
+class GWorkFlow : Plugin<Project> {
+    private lateinit var project: Project
+    val context by lazy { TaskContext(project) }
 
-fun isLib() =
-    mainFiles.isEmpty()
-
-class GWorkFlow : Plugin<Project>
-{
-    private lateinit var project : Project
-
-    private inline fun <reified T : Task> createTask(name : String, groupName : String = taskGroupMain) =
+    private inline fun <reified T : Task> createTask(name: String, groupName: String = taskGroupMain) {
         project
             .tasks
-            .register(name, T::class.java) { group = groupName }
+            .register(name, T::class.java, context)
+
+        project
+            .tasks[name]
+            .group = groupName
+    }
 
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    override fun apply(project : Project)
-    {
+    override fun apply(project: Project) {
         println("\n${" gWorkFlow ".conFormat(backColor = AnsiColor.Blue)}$resetConFormatStr\n")
 
         this.project = project
-        extension = project.toExtension(project.objects)
 
-        val branch = Git.branch
-
-        isMainBranch = branch in listOf("main", "master", "prod", "")
-
-        calcVars()
-
-        project
-            .afterEvaluate {
-                val jdkName = extension.jdkName.orNull mustBeFound "gWorkFlow.jdkName"
-
-                val jdkVersion = extension
-                    .jdkVersion
-                    .orNull
-                    ?: (jdkName.substringAfterLast('-') mustBeFound "gWorkFlow.jdkVersion").toInt()
-
-                (jdkVersion <= maxJdkVer) orThrow "Max supported JDK version is $maxJdkVer"
-
-                configureJDK(min(jdkVersion, maxJdkForKotlinCompiler))
-
-                val gradleChanged = configureGradle(gradleVersion)
-
-                if (gradleChanged && project.gradle.startParameter.taskNames.isNotEmpty())
-                    doRestart("Gradle configuration was changed.")
-
-                val ideChanged = configureIDE(jdkName)
-
-                if (ideChanged && project.gradle.startParameter.taskNames.isNotEmpty())
-                    doRestart("IDE configuration was changed.")
-
-                println("\nConfiguration finished\n".conFormat(AnsiColor.Green))
-                println("Start task(s): [${project.gradle.startParameter.taskNames.joinToString(" ")}]...".conFormat(AnsiColor.Smoke))
-            }
-
-        Git.installHooks()
+//        Git.installHooks()
         configureProject()
         createTasks()
+
+        val gradleChanged = configureGradle(gradleVersion)
+
+        if (gradleChanged && project.gradle.startParameter.taskNames.isNotEmpty())
+            doRestart("Gradle configuration was changed.")
+
+        val ideChanged = configureIDE(params.jdkName)
+
+        if (ideChanged && project.gradle.startParameter.taskNames.isNotEmpty())
+            doRestart("IDE configuration was changed.")
+
+        println("\nConfiguration finished\n".conFormat(AnsiColor.Green))
+        println("Start task(s): [${project.gradle.startParameter.taskNames.joinToString(" ")}]...".conFormat(AnsiColor.Smoke))
     }
 
-    private fun doRestart(reason : String) {
+    private fun doRestart(reason: String) {
         error("$reason Please start [${project.gradle.startParameter.taskNames.joinToString(" ")}] again.")
     }
 
-    private fun createTasks()
-    {
+    private fun createTasks() {
         createTask<Check>(checkName)
         createTask<Clean>(cleanName)
 
-        if (hasEnv)
+        /*if (hasEnv)
         {
             createTask<PrepareEnv>(envUpName)
             createTask<ShutdownEnv>(envDownName)
-        }
+        }*/
 
         project
             .tasks
@@ -181,33 +141,15 @@ class GWorkFlow : Plugin<Project>
         createTask<Minor>(releaseMinorName)
         createTask<Patch>(releasePatchName)
 
-        if (isLib())
-        {
+        if (context.isLib) {
             createTask<PublishLib>(publishName)
             createTask<DeployLib>(deployName)
             createTask<LibDevFinish>(devFinishName)
             createTask<LibTests>(unitTestsName)
 
             createTask<DeployDependent>(deployDependent)
-        } else
-        {
-            project
-                .tasks
-                .register(buildName, Build::class.java) {
-                    group = taskGroupMain
-
-                    // Этот блок перенесен сюда из метода Build.init, из-за ошибки
-                    // Cannot change dependencies of dependency configuration ':implementation' after it has been included in dependency resolution.
-                    // возникающей вследствие очередного припадка Gradle при обработке секции dependencies/implementation в проекте использующем текущий плагин
-                    // Из-за переноса, понадобился костыль в классе Build (Помечен как "Костыль для корректного определение UP-TO-DATE").
-
-                    doFirst {
-                        val sources = project.extensions.getByType(SourceSetContainer::class.java)["main"]
-
-                        from(sources.output + sources.runtimeClasspath.filter { it.exists() }.map { if (it.isDirectory) it else project.zipTree(it) })
-                    }
-                }
-
+        } else {
+            createTask<Build>(buildName)
             createTask<Deploy>(deployName)
             createTask<Publish>(publishName)
 
@@ -219,13 +161,15 @@ class GWorkFlow : Plugin<Project>
         }
     }
 
-    private fun configureProject()
-    {
-        project.version = productVer
+    private fun configureProject() {
+        project.version = context.productVersion
 
         configureRepositories()
 
         project.plugins.apply("org.jetbrains.kotlin.jvm")
+
+        configureJDK()
+
         project.plugins.apply("java")
         //project.plugins.apply("io.gitlab.arturbosch.detekt")
 
@@ -237,8 +181,7 @@ class GWorkFlow : Plugin<Project>
 
         val java = project.extensions.findByType(JavaPluginExtension::class.java) mustBeFound "JavaPluginExtension"
 
-        if (isLib())
-        {
+        if (context.isLib) {
             java.withSourcesJar()
             java.withJavadocJar()
 
@@ -263,25 +206,7 @@ class GWorkFlow : Plugin<Project>
         project.gradle.startParameter.isParallelProjectExecutionEnabled = true
     }
 
-    private fun calcVars()
-    {
-        buildDir = project.layout.buildDirectory.get().str
-        projectDir = project.projectDir
-        projectName = project.name
-        versionFile = File(projectDir, VERSION_FILE)
-        dateStr = SimpleDateFormat("yy.M.d.HHmm").format(Date())
-
-        productVer = if (versionFile.exists())
-            versionFile.text.trim()
-        else
-            dateStr
-
-        jarName = "${project.name.lowercase()}.$productVer.jar"
-        fullJarName = "$buildDir/$jarName"
-    }
-
-    private fun configureRepositories()
-    {
+    private fun configureRepositories() {
         project
             .repositories {
                 if (File(dependencyDir).exists())
@@ -306,22 +231,33 @@ class GWorkFlow : Plugin<Project>
             }
     }
 
-    private fun configureJDK(version : Int)
-    {
-        val jdkVer = JavaLanguageVersion.of(version)
+    private fun configureJDK() {
+        val jdkVersion = params.jdkVersion or (params.jdkName.substringAfterLast('-') mustBeFound "jdkVersion").toInt()
+
+        (params.jdkVersion <= maxJdkVer) orThrow "Max supported JDK version is $maxJdkVer"
+
+        val jdkVer = JavaLanguageVersion.of(jdkVersion)
 
         project
             .extensions
-            .configure<KotlinJvmProjectExtension> {
+            .configure<KotlinJvmProjectExtension>("kotlin") {
                 jvmToolchain {
-                    compilerOptions.jvmTarget.set(JvmTarget.valueOf("JVM_$version"))
                     languageVersion.set(jdkVer)
+                    compilerOptions.jvmTarget.set(JvmTarget.valueOf("JVM_$jdkVersion"))
                 }
+
+                /*compilerOptions {
+                    apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+                    languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+                }*/
             }
+
+        /*val java = project.extensions.findByType(JavaPluginExtension::class.java) mustBeFound "JavaPluginExtension"
+
+        java.toolchain.languageVersion.set(jdkVer)*/
     }
 
-    private fun configureGradle(version : String) : Boolean
-    {
+    private fun configureGradle(version: String): Boolean {
         return pathFile(
             name = "gradle/wrapper/gradle-wrapper.properties",
             default = """
@@ -332,27 +268,26 @@ class GWorkFlow : Plugin<Project>
                         zipStorePath=wrapper/dists
                      """,
             "distributionUrl.*" to """distributionUrl=https\\://services.gradle.org/distributions/gradle-$version-bin.zip"""
-                )
+        )
     }
 
-    private fun configureIDE(jdkName : String) : Boolean
-    {
-        val gradleJdkProp = """  <component name="ProjectRootManager" version="2" default="true" project-jdk-name="$jdkName" project-jdk-type="JavaSDK" />${"\n"}</project>"""
+    private fun configureIDE(jdkName: String): Boolean {
+        val gradleJdkProp =
+            """  <component name="ProjectRootManager" version="2" default="true" project-jdk-name="$jdkName" project-jdk-type="JavaSDK" />${"\n"}</project>"""
 
-        var changedJDK = pathFile(
+        val changedJDK = pathFile(
             name = ".idea/misc.xml",
             default = """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <project version="4">
                     <component name="ExternalStorageConfigurationManager" enabled="true" />
-                    $gradleJdkProp
                 </project>
             """,
             """<component\s*name\s*=\s*"ProjectRootManager".*?>""" to "",
             "</project>" to gradleJdkProp
-                                 )
+        )
 
-        changedJDK = changedJDK || pathFile(
+        return pathFile(
             name = ".idea/gradle.xml",
             default = """
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -372,8 +307,7 @@ class GWorkFlow : Plugin<Project>
                     </project>
             """,
             """<option\s*name\s*=\s*"gradleJvm".*?/>""" to ""
-                                           )
-        return changedJDK
+        ) || changedJDK
     }
 
     private val String.cleanUp
@@ -381,9 +315,8 @@ class GWorkFlow : Plugin<Project>
             .filter { !it.isBlank() }
             .joinToString(System.lineSeparator())
 
-    private fun pathFile(name: String, default : String, vararg replace : Pair<String, String>) : Boolean
-    {
-        val cfgFile = File(projectDir, name)
+    private fun pathFile(name: String, default: String, vararg replace: Pair<String, String>): Boolean {
+        val cfgFile = File(context.projectDir, name)
 
         print("Look for ${name.conFormat(AnsiColor.Blue)}$resetConFormatStr...".padEnd(reportColWidth))
 
@@ -401,10 +334,9 @@ class GWorkFlow : Plugin<Project>
 
         fixedContent = fixedContent.cleanUp
 
-        val changed = content != fixedContent
+        val changed = (content != fixedContent) || !cfgFile.exists()
 
-        if (changed)
-        {
+        if (changed) {
             println("Patch applied")
 
             cfgFile.writeText(fixedContent)
@@ -415,24 +347,13 @@ class GWorkFlow : Plugin<Project>
     }
 }
 
-val String.patched
-    get() = this
-        .replace("j-a-r", jarName)
-        .replace("v-e-r-s-i-o-n", productVer)
-        .replace("a-c-c-o-u-n-t", params.registryUrl.str)
-        .replace("m-a-i-n--i-m-a-g-e", Image(params.registryUrl, projectName, productVer).toString())
-
-fun checkMainBranch() =
-    isMainBranch orThrow "The task can only be run in the Main branch"
-
-fun DefaultTask.autoAfterEvaluate(code : Project.() -> Unit) =
+fun DefaultTask.autoAfterEvaluate(code: Project.() -> Unit) =
     if (project.state.executed)
         code(project)
     else
         project
             .afterEvaluate(code)
 
-fun Task.execute()
-{
+fun Task.execute() {
     actions.forEach { it.execute(this) }
 }

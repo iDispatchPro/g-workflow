@@ -1,13 +1,13 @@
 package tasks
 
-import buildDir
+import TaskContext
 import k.common.tryProc
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import pluginName
-import java.io.File
+import javax.inject.Inject
 
-open class Clean : DefaultTask()
+open class Clean @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {
@@ -19,10 +19,10 @@ open class Clean : DefaultTask()
     @TaskAction
     fun action()
     {
-        println("Remove build $buildDir...")
+        println("Remove build ${context.buildDir}...")
 
         tryProc {
-            File(buildDir).deleteRecursively()
+            context.buildDir.deleteRecursively()
         }
 
         //Docker.cleanUp(1.w)

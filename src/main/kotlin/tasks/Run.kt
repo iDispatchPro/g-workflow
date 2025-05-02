@@ -1,12 +1,13 @@
 package tasks
 
+import TaskContext
 import buildName
-import fullJarName
 import k.common.cmdLine
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
+import javax.inject.Inject
 
-open class Run : DefaultTask()
+open class Run @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {
@@ -16,6 +17,9 @@ open class Run : DefaultTask()
     }
 
     @TaskAction
-    fun action() =
-        println(cmdLine("${System.getProperty("java.home")}/Bin/java -jar $fullJarName"))
+    fun action() {
+        println("\njar output:\n")
+
+        println(cmdLine("${System.getProperty("java.home")}/Bin/java -jar ${context.fullJarName}"))
+    }
 }

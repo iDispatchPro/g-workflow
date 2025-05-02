@@ -1,19 +1,11 @@
 package tasks
 
+import TaskContext
 import autoAfterEvaluate
 import computeAndSaveFileHash
 import devFinishName
-import extension
 import fromScript
-import isMainBranch
-import k.common.MsgType
-import k.common.base64
-import k.common.msg
-import k.common.mustBeFound
-import k.common.mustBeSpecified
-import k.common.n
-import k.common.str
-import k.common.text
+import k.common.*
 import k.serializing.deSerialize
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -32,9 +24,6 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.get
 import org.gradle.plugins.signing.SigningExtension
 import params
-import productVer
-import projectName
-import tasks.version.checkBranchName
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -42,10 +31,11 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import javax.inject.Inject
 
 const val keyServer = "https://keyserver.ubuntu.com/pks"
 
-open class PublishLib : DefaultTask()
+open class PublishLib @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     private lateinit var mavenPublish : MavenPublicationInternal
     private lateinit var groupIdValue : String
@@ -65,7 +55,7 @@ open class PublishLib : DefaultTask()
         autoAfterEvaluate {
             dependsOn(checkBranchName)
 
-            if (isMainBranch)
+            if (context.isMainBranch)
                 dependsOn(devFinishName,
                           "javadocJar",
                           "sourcesJar",
@@ -75,7 +65,7 @@ open class PublishLib : DefaultTask()
                 dependsOn(devFinishName,
                           "publishToMavenLocal")
 
-            groupIdValue = extension.groupId fromScript "group"
+            groupIdValue = context.extension.groupId fromScript "group"
 
             extensions
                 .getByType(PublishingExtension::class.java)
@@ -85,34 +75,34 @@ open class PublishLib : DefaultTask()
                             from(project.components["java"])
 
                             groupId = groupIdValue
-                            artifactId = projectName
-                            version = productVer
+                            artifactId = context.projectName
+                            version = context.productVersion
 
-                            val projectUrl = extension.projectUrl fromScript "projectUrl"
+                            val projectUrl = context.extension.projectUrl fromScript "projectUrl"
 
                             pom.url = projectUrl
-                            pom.description = extension.projectDescription fromScript "projectDescription"
+                            pom.description = context.extension.projectDescription fromScript "projectDescription"
 
                             pom.scm {
-                                url = extension.scmUrl.orNull ?: projectUrl
+                                url = context.extension.scmUrl.orNull ?: projectUrl
                             }
 
                             pom.licenses {
                                 license {
-                                    url = extension.licenseUrl.orNull ?: projectUrl
+                                    url = context.extension.licenseUrl.orNull ?: projectUrl
                                 }
                             }
 
                             pom.developers {
                                 developer {
-                                    url = extension.developerUrl.orNull ?: projectUrl
+                                    url = context.extension.developerUrl.orNull ?: projectUrl
                                 }
                             }
                         } as MavenPublicationInternal
                     }
 
                     repositories {
-                        if (isMainBranch)
+                        if (context.isMainBranch)
                         {
                             maven {
                                 url = params.mavenPluginsURL
@@ -133,7 +123,7 @@ open class PublishLib : DefaultTask()
     @TaskAction
     fun action()
     {
-        if (isMainBranch)
+        if (context.isMainBranch)
         {
             ensureKey()
 
@@ -143,13 +133,16 @@ open class PublishLib : DefaultTask()
             upload()
         }
 
-        val target = if (isMainBranch)
+        val target = if (context.isMainBranch)
             "Maven Central"
         else
             "Maven Local"
 
         msg("\nPlease use this line for importing library from $target:".n, MsgType.BlueText)
-        msg("""implementation("$groupIdValue:$projectName:$productVer")""".n, MsgType.OrangeText)
+        msg(
+            """implementation("$groupIdValue:${context.projectName}:${context.productVersion}")""".n,
+            MsgType.Ok
+        )
     }
 
     private fun ensureKey()
@@ -217,7 +210,7 @@ open class PublishLib : DefaultTask()
     {
         println("\nPrepare...")
 
-        val commonFileName = "$projectName-$productVer"
+        val commonFileName = "${context.projectName}-${context.productVersion}"
 
         return mavenPublish.publishableArtifacts
             .map { artifact ->
@@ -238,7 +231,7 @@ open class PublishLib : DefaultTask()
     {
         println("\nPacking...")
 
-        val path = groupIdValue.str.replace(".", "\\") + "\\$projectName\\$productVer"
+        val path = groupIdValue.str.replace(".", "\\") + "\\${context.projectName}\\${context.productVersion}"
 
         ZipOutputStream(FileOutputStream(zipFile))
             .use { zipOut ->
@@ -268,7 +261,7 @@ open class PublishLib : DefaultTask()
 
     private fun upload()
     {
-        val name = URLEncoder.encode("$groupIdValue:$projectName:$productVer", UTF_8)
+        val name = URLEncoder.encode("$groupIdValue:${context.projectName}:${context.productVersion}", UTF_8)
 
         val url = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=$name"
 

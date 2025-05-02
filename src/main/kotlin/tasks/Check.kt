@@ -1,14 +1,16 @@
 package tasks
 
+import TaskContext
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import javax.inject.Inject
 
 private const val DETEKT_CONFIG = "detekt.yaml"
 
-open class Check : DefaultTask()
+open class Check @Inject constructor(private val context: TaskContext) : DefaultTask()
 {
     init
     {
