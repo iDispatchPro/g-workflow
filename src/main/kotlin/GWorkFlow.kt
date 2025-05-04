@@ -139,24 +139,22 @@ class GWorkFlow : Plugin<Project>
 
                 val ideChanged = configureIDE(jdkName)
 
-                if ((ideChanged || gradleChanged) && hasTasks)
-                    doRestart("Configuration was changed.")
+                if (ideChanged || gradleChanged)
+                    if (hasTasks)
+                        error("Configuration was changed. Please start [${project.gradle.startParameter.taskNames.joinToString(" ")}] again.")
+                    else
+                        error("Please sync Gradle project.")
 
                 configureProject()
                 createTasks()
 
                 println("\nConfiguration finished\n".conFormat(AnsiColor.Green))
 
-                print("".conFormat(AnsiColor.Smoke))
-
                 if (hasTasks)
-                    println("Start task(s): [${project.gradle.startParameter.taskNames.joinToString(" ")}]...")
+                    println("Start task(s): [${project.gradle.startParameter.taskNames.joinToString(" ")}]...".conFormat(AnsiColor.Smoke))
+                else
+                    println("Continue...".conFormat(AnsiColor.Smoke))
             }
-    }
-
-    private fun doRestart(reason : String)
-    {
-        error("$reason Please start [${project.gradle.startParameter.taskNames.joinToString(" ")}] again.")
     }
 
     private fun createTasks()
