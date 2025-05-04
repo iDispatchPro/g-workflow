@@ -2,10 +2,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 plugins {
-    `kotlin-dsl`
+    id("org.jetbrains.kotlin.jvm") version "2.1.21-RC"
     id("com.gradle.plugin-publish") version "1.2.1"
     `maven-publish`
-    id("org.jetbrains.kotlin.jvm") version "2.2.0-Beta2"
+    `kotlin-dsl` version "6.1.0"
 }
 
 val projectGroup = "ru.old-school-geek"
@@ -21,18 +21,17 @@ group = projectGroup
 
 dependencies {
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6")
-    implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.0.0")
+    implementation("org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.1.21-RC")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okio:okio:3.9.0")
+
     implementation("com.github.jnr:jnr-unixsocket:0.38.22")
 
     implementation("org.http4k:http4k-core:$http4kVer")
     implementation("org.http4k:http4k-client-okhttp:$http4kVer")
 
-    implementation("org.testng:testng:7.10.2")
-
-    implementation("com.squareup.okio:okio:3.9.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.testng:testng:7.10.0")
 
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.1.0.202411261347-r")
 }
@@ -42,13 +41,12 @@ sourceSets {
         java.setSrcDirs(listOf("../k-lib-common/src", "../k-lib-docker/src", "../k-lib-git/src"))
     }
 }
-/*
+
 kotlin {
     jvmToolchain(21)
-}*/
+}
 
-fun getProp(name : String) : String
-{
+fun getProp(name: String): String {
     val propsFile = file("gradle-local.properties")
     val gradleValue = providers.gradleProperty(name).getOrNull()
     val envName = "${projectName}_$name"
@@ -120,7 +118,7 @@ repositories {
              password = getProp("mavenPassword")
          }
      }*/
-
+    gradlePluginPortal()
     mavenCentral()
 }
 

@@ -26,10 +26,7 @@ data class Parameters(@Optional
                       @Optional
                       val signingKeyRingFile : String,
                       @Optional
-                      val signingPassFraze : String,
-                      val jdkName : String,
-                      @Optional("0")
-                      val jdkVersion : Int)
+                      val signingPassFraze : String)
 {
     val registry : Registry
         get() = Registry(registryUrl.list.first(), registryLogin, registryPassword)
