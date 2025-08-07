@@ -14,7 +14,7 @@ import javax.inject.Inject
 const val deployDependent = "$GLOBAL_PREFIX-deploy-dependent-libs"
 const val gradleFile = "build.gradle.kts"
 
-open class DeployDependent @Inject constructor(private val context: TaskContext) : Jar()
+abstract class DeployDependent @Inject constructor(private val context : TaskContext) : Jar()
 {
     init
     {

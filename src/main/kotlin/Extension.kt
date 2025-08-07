@@ -1,9 +1,7 @@
-import k.common.*
+import k.common.NotSpecifiedError
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Property
-import org.jetbrains.kotlin.tooling.core.Interner
+import org.gradle.api.provider.*
 
 const val extensionName = "gWorkFlow"
 
@@ -31,5 +29,5 @@ open class Extension(objectFactory : ObjectFactory)
     }
 }
 
-infix fun <T> Property<T>.fromScript(name : String) =
+infix fun <T : Any> Property<T>.fromScript(name : String) =
     orNull ?: throw NotSpecifiedError("Property $extensionName.$name in build.gradle")

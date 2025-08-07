@@ -52,7 +52,7 @@ import tasks.version.Patch
 import java.io.File
 
 const val maxJdkVer = 22
-const val gradleVersion = "8.14"
+const val gradleVersion = "9.0.0"
 
 const val pluginName = "G-Workflow"
 val instancesLabel = pluginName.low

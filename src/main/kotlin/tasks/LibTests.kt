@@ -6,7 +6,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.get
 import javax.inject.Inject
 
-open class LibTests @Inject constructor(private val context: TaskContext) : Test()
+abstract class LibTests @Inject constructor(private val context : TaskContext) : Test()
 {
     init
     {

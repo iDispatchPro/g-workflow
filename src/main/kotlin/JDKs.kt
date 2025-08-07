@@ -21,7 +21,7 @@ private fun findJdkTableXml() : File
 
     ideaDirs.isNotEmpty() orThrow "Failed to find IDE settings"
 
-    (ideaDirs.size == 1) orThrow "Several installed IDE not supported [${ideaDirs.joinToString { it.name }}]"
+    (ideaDirs.size == 1) orThrow "Several installed IDE not supported [${ideaDirs.joinToString { it.name }}]\nLocation: ${ideaDirs.first().parent}"
 
     return File(ideaDirs.single(), "options/jdk.table.xml") mustBeFound "jdk.table.xml"
 }

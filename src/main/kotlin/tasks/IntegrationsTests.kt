@@ -11,7 +11,7 @@ import javax.inject.Inject
 const val testGroup = "integration"
 const val integrationTestsName = "$GLOBAL_PREFIX-test-$testGroup"
 
-open class IntegrationsTests @Inject constructor(private val context: TaskContext) : Test()
+abstract class IntegrationsTests @Inject constructor(private val context : TaskContext) : Test()
 {
     init
     {

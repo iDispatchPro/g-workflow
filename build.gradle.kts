@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.21-RC"
+    id("org.jetbrains.kotlin.jvm") version "2.1.21"
     id("com.gradle.plugin-publish") version "1.2.1"
     `maven-publish`
     `kotlin-dsl` version "6.1.0"

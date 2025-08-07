@@ -10,7 +10,7 @@ import javax.inject.Inject
 
 const val unitTestsName = "$GLOBAL_PREFIX-test-unit"
 
-open class Tests @Inject constructor(private val context: TaskContext) : Test()
+abstract class Tests @Inject constructor(private val context : TaskContext) : Test()
 {
     init
     {
